@@ -259,51 +259,55 @@ async function fetchSubtitlesFromOpenSubtitles(type, imdbid, season = null, epis
 
 // Create the Express app for configuration
 const app = express();
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// Serve static files
+app.use(express.static(__dirname));
 
 // Update config.html content to only ask for Gemini API key
 app.get('/config', (req, res) => {
-    const html = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Addon Configuration</title>
-    </head>
-    <body>
-        <h1>Configure Your Addon</h1>
-        <form id="configForm" action="/save-credentials" method="POST">
-            <label for="geminiApiKey">Gemini Flash 1.5 API Key:</label>
-            <input type="text" id="geminiApiKey" name="geminiApiKey" required><br><br>
-            
-            <button type="submit">Save</button>
-        </form>
-    </body>
-    </html>`;
-    res.send(html);
+    res.sendFile(__dirname + '/config.html');
 });
 
 // Handle form submission with validation
 app.post('/save-credentials', async (req, res) => {
     const { geminiApiKey } = req.body;
     
-    // Validate Gemini API key
-    const isGeminiValid = await validateGeminiKey(geminiApiKey);
-
-    if (!isGeminiValid) {
-        return res.status(400).send('Invalid Gemini API key. Please check your credentials.');
+    if (!geminiApiKey) {
+        return res.status(400).send('API key is required');
     }
 
-    // If valid, save credentials and initialize client
-    const credentials = { geminiApiKey };
-    fs.writeFileSync('credentials.json', JSON.stringify(credentials));
-    
-    // Initialize Gemini client with validated credentials
-    genAI = new GoogleGenerativeAI(geminiApiKey);
-    model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    try {
+        // Validate Gemini API key first
+        const isGeminiValid = await validateGeminiKey(geminiApiKey);
 
-    res.send('Credentials validated and saved successfully! You can now close this page and use the addon in Stremio.');
+        if (!isGeminiValid) {
+            return res.status(400).send('Invalid Gemini API key. Please check your credentials.');
+        }
+
+        // If valid, save credentials and initialize client
+        const credentials = { geminiApiKey };
+        
+        // Write to file with proper error handling
+        try {
+            await fs.promises.writeFile('credentials.json', JSON.stringify(credentials, null, 2), {
+                mode: 0o666 // Set file permissions to be writable
+            });
+        } catch (writeError) {
+            console.error('Error writing credentials file:', writeError);
+            return res.status(500).send('Error saving credentials. Please check file permissions.');
+        }
+        
+        // Initialize Gemini client with validated credentials
+        genAI = new GoogleGenerativeAI(geminiApiKey);
+        model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+        res.status(200).send('Credentials validated and saved successfully!');
+    } catch (error) {
+        console.error('Error in save-credentials:', error);
+        res.status(500).send('Error processing request. Please try again.');
+    }
 });
 
 // Function to load and validate saved credentials
