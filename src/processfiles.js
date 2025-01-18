@@ -1,6 +1,6 @@
 const fs = require('fs').promises;
-const { translateText } = require('./translateProvider');
-const { updateTranslationProgress, createOrUpdateMessageSub } = require('./subtitles');
+const { translateWithGemini } = require('./translateProvider');
+const { formatSubtitle, parseSRT, ensureSubtitleDirectory } = require('./subtitles');
 
 /**
  * Estimates tokens for a subtitle batch
@@ -90,7 +90,7 @@ async function processBatch(batch, targetLanguage) {
     const combinedText = texts.join('\n\n');
 
     // Translate with context
-    const translatedText = await translateText(combinedText, targetLanguage);
+    const translatedText = await translateWithGemini(combinedText, targetLanguage);
 
     // Split and parse translated text back into subtitles
     const translatedParts = translatedText.split('\n\n');

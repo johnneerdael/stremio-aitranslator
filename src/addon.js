@@ -1,8 +1,9 @@
 const { addonBuilder } = require('stremio-addon-sdk');
 const { processSubtitles } = require('./processfiles');
-const { createOrUpdateMessageSub, generateSubtitlePath, adjustSubtitleTiming } = require('./subtitles');
+const { createOrUpdateMessageSub, generateSubtitlePath } = require('./subtitles');
 const { getSubtitles } = require('./opensubtitles');
 const fs = require('fs').promises;
+const translationQueue = require('./translationQueue');
 
 // Cache configuration
 const CACHE_CONFIG = {

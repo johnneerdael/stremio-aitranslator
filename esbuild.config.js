@@ -1,7 +1,16 @@
 const esbuild = require('esbuild');
 const debug = require('debug')('stremio:build');
+const fs = require('fs');
+const path = require('path');
 
 debug('Starting build...');
+
+// Ensure directories exist
+['dist', 'static', 'langs', 'subtitles', 'subtitles/dut'].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
 
 esbuild.build({
   entryPoints: ['src/index.js'],
@@ -26,6 +35,11 @@ esbuild.build({
 })
 .then(() => {
   debug('Build completed successfully');
+
+  // Copy static files
+  if (fs.existsSync('src/config.html')) {
+    fs.copyFileSync('src/config.html', 'static/config.html');
+  }
 })
 .catch((error) => {
   debug('Build failed:', error);

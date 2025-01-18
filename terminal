@@ -97,6 +97,7 @@ RUN pnpm install --prod
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/static ./static
+COPY --from=builder /app/langs ./langs
 
 # Expose port
 EXPOSE 7000
@@ -334,3 +335,236 @@ git push origin v1.1.7
 
 # Try building again with debug output
 DEBUG=stremio:* docker compose up -d --build 
+
+# Create required directories
+mkdir -p static src/static langs
+
+# Move config.html to correct location
+mv src/config.html static/config.html
+
+# Create .gitkeep to preserve directories
+touch static/.gitkeep
+touch langs/.gitkeep
+
+# Create language definitions
+cat > langs/translateGeminiFlash.lang.json << 'EOF'
+{
+  "eng": "English",
+  "spa": "Spanish",
+  "fra": "French",
+  "deu": "German",
+  "ita": "Italian",
+  "por": "Portuguese",
+  "rus": "Russian",
+  "jpn": "Japanese",
+  "kor": "Korean",
+  "chi": "Chinese",
+  "nld": "Dutch"
+}
+EOF
+
+# Create addon.js
+cat > src/addon.js << 'EOF'
+const { addonBuilder } = require('stremio-addon-sdk');
+const { getSubtitles } = require('./opensubtitles');
+const { translateSubtitles } = require('./subtitles');
+const { processFiles } = require('./processfiles');
+
+const manifest = {
+    id: 'org.stremio.aitranslator',
+    version: '1.1.8',
+    name: 'AI Subtitle Translator',
+    description: 'Translates subtitles using Google Gemini Flash 1.5',
+    types: ['movie', 'series'],
+    resources: ['subtitles'],
+    catalogs: [],
+    idPrefixes: ['tt']
+};
+
+const builder = new addonBuilder(manifest);
+
+builder.defineSubtitlesHandler(async ({ type, id }) => {
+    try {
+        const subtitles = await getSubtitles(type, id);
+        if (!subtitles) return { subtitles: [] };
+        
+        const translated = await translateSubtitles(subtitles);
+        return { subtitles: translated };
+    } catch (error) {
+        console.error('Error in subtitle handler:', error);
+        return { subtitles: [] };
+    }
+});
+
+module.exports = builder.getInterface();
+EOF
+
+# Update version
+sed -i 's/"version": ".*"/"version": "1.1.8"/' package.json
+sed -i 's/Version .*/Version 1.1.8/' static/config.html
+
+# Update Dockerfile
+cat > Dockerfile << 'EOF'
+# Build stage
+FROM node:20-alpine AS builder
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json ./
+
+# Install dependencies
+RUN pnpm install
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN pnpm build
+
+# Production stage
+FROM node:20-alpine AS production
+
+# Install system utilities
+RUN apk add --no-cache \
+    bash \
+    curl \
+    htop \
+    nano \
+    procps \
+    tcpdump \
+    vim
+
+# Set working directory
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy package files and install production dependencies
+COPY package.json ./
+RUN pnpm install --prod
+
+# Copy built files from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/static ./static
+COPY --from=builder /app/langs ./langs
+
+# Expose port
+EXPOSE 7000
+
+# Start the application
+CMD ["node", "dist/index.js"]
+EOF
+
+# Commit changes
+git add .
+git commit -m "fix: resolve directory structure and missing files \
+- Add proper static directory
+- Add language definitions
+- Add addon implementation
+- Fix Dockerfile copy commands
+- Bump version to 1.1.8"
+
+# Create new version tag
+git tag -a v1.1.8 -m "Version 1.1.8 - Fixed directory structure"
+
+# Push changes
+git push origin main
+git push origin v1.1.8
+
+# Try building again
+DEBUG=stremio:* docker compose up -d --build 
+
+# Update .gitignore
+cat > .gitignore << 'EOF'
+# Dependencies
+node_modules/
+.pnpm-store/
+yarn.lock
+package-lock.json
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+build/
+.next/
+.nuxt/
+.output/
+
+# Environment and credentials
+credentials.json
+.env
+.env.*
+!.env.example
+
+# Runtime data
+subtitles/
+data/
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Cache directories
+.cache/
+.temp/
+.eslintcache
+.stylelintcache
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+
+# Docker volumes
+docker/data/
+docker/logs/
+caddy_data/
+caddy_config/
+
+# Generated files
+public/subtitles/
+static/generated/
+EOF
+
+# Commit changes
+git add .gitignore
+git commit -m "chore: enhance gitignore patterns \
+- Add dependency management files
+- Add build outputs
+- Add environment files
+- Add runtime data
+- Add cache directories
+- Add editor files
+- Add testing directories
+- Add temporary files
+- Add Docker volumes
+- Add generated files"
+
+# Create new version tag
+git tag -a v1.1.9 -m "Version 1.1.9 - Enhanced gitignore"
+
+# Push changes
+git push origin main
+git push origin v1.1.9 

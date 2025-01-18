@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { serveHTTP } = require('stremio-addon-sdk');
-const { addonInterface } = require('./addon');
+const addonInterface = require('./addon');
 const { validateGeminiKey, initializeGemini } = require('./translateProvider');
 const fs = require('fs').promises;
 const path = require('path');
@@ -20,14 +20,7 @@ app.use(express.static(STATIC_PATH));
 
 // Request logging middleware
 app.use((req, res, next) => {
-    const start = Date.now();
-    debug(`${req.method} ${req.url} started`);
-
-    res.on('finish', () => {
-        const duration = Date.now() - start;
-        debug(`${req.method} ${req.url} ${res.statusCode} - ${duration}ms`);
-    });
-
+    debug(`${req.method} ${req.url}`);
     next();
 });
 

@@ -33,7 +33,7 @@ const rateState = {
     tokensThisMinute: 0,
     lastMinute: Date.now(),
     lastDay: Date.now(),
-
+    
     reset() {
         const now = Date.now();
         if (now - this.lastMinute >= 60000) {
@@ -49,20 +49,17 @@ const rateState = {
 
     async checkLimits(estimatedTokens) {
         this.reset();
-
-        // Check daily request limit
+        
         if (this.requestsToday >= 1500) {
             throw new Error('Daily request limit reached');
         }
 
-        // Check per-minute request limit
         if (this.requestsThisMinute >= 15) {
             const waitTime = 60000 - (Date.now() - this.lastMinute);
             await new Promise(resolve => setTimeout(resolve, waitTime));
             this.reset();
         }
 
-        // Check token limit
         if (this.tokensThisMinute + estimatedTokens > BATCH_STRATEGY.dynamic.tokenLimit) {
             const waitTime = 60000 - (Date.now() - this.lastMinute);
             await new Promise(resolve => setTimeout(resolve, waitTime));
@@ -75,129 +72,40 @@ const rateState = {
     }
 };
 
-// Queue processor with token-based batching
-async function processWithStrategy(subtitles, job, cb) {
+// Create queue with optimized settings
+const translationQueue = new Queue(async function (job, cb) {
     try {
-        let processedCount = 0;
-        const totalSubtitles = subtitles.length;
-        const results = [];
+        const { subtitles, imdbId, season, episode, targetLanguage } = job;
+        
+        console.log('Processing subtitles:', {
+            imdbId,
+            season,
+            episode,
+            targetLanguage,
+            subtitleCount: subtitles.length
+        });
 
-        // Helper function to get next batch based on target tokens
-        function getNextBatch(targetTokens) {
-            let batchSize = 1;
-            let batchTokens = 0;
-            const batch = [];
+        const result = await processSubtitles(
+            subtitles,
+            imdbId,
+            season,
+            episode,
+            targetLanguage
+        );
 
-            while (processedCount + batchSize <= totalSubtitles && 
-                   batchTokens < targetTokens && 
-                   batchSize <= 100) { // Safety limit
-                const nextSubtitle = subtitles[processedCount + batchSize - 1];
-                const nextTokens = estimateTokens([nextSubtitle]);
-                if (batchTokens + nextTokens > targetTokens) break;
-                
-                batch.push(nextSubtitle);
-                batchTokens += nextTokens;
-                batchSize++;
-            }
-
-            return batch;
-        }
-
-        // Process initial small batches for quick feedback
-        for (let i = 0; i < BATCH_STRATEGY.initial.batchCount && processedCount < totalSubtitles; i++) {
-            const batch = getNextBatch(BATCH_STRATEGY.initial.targetTokens);
-            if (batch.length === 0) break;
-
-            const estimatedTokens = estimateTokens(batch);
-            await rateState.checkLimits(estimatedTokens);
-            
-            const result = await processBatch(batch, job, 'initial', processedCount, totalSubtitles);
-            results.push(result);
-            processedCount += batch.length;
-        }
-
-        // Process fast medium batches
-        for (let i = 0; i < BATCH_STRATEGY.fast.batchCount && processedCount < totalSubtitles; i++) {
-            const batch = getNextBatch(BATCH_STRATEGY.fast.targetTokens);
-            if (batch.length === 0) break;
-
-            const estimatedTokens = estimateTokens(batch);
-            await rateState.checkLimits(estimatedTokens);
-            
-            const result = await processBatch(batch, job, 'fast', processedCount, totalSubtitles);
-            results.push(result);
-            processedCount += batch.length;
-        }
-
-        // Process remaining with dynamic scaling
-        let currentTokenTarget = BATCH_STRATEGY.dynamic.initialTokens;
-        while (processedCount < totalSubtitles) {
-            const batch = getNextBatch(currentTokenTarget);
-            if (batch.length === 0) break;
-
-            const estimatedTokens = estimateTokens(batch);
-            await rateState.checkLimits(estimatedTokens);
-            
-            const result = await processBatch(batch, job, 'dynamic', processedCount, totalSubtitles);
-            results.push(result);
-            processedCount += batch.length;
-            
-            // Scale up token target for next batch
-            currentTokenTarget = Math.min(
-                currentTokenTarget * BATCH_STRATEGY.dynamic.tokenMultiplier,
-                BATCH_STRATEGY.dynamic.maxTokens
-            );
-        }
-
-        cb(null, results);
+        cb(null, result);
     } catch (error) {
-        console.error('Processing error:', error);
+        console.error('Queue processing error:', error);
         cb(error);
     }
-}
-
-function estimateTokens(batch) {
-    const totalChars = batch.reduce((sum, text) => sum + text.length, 0);
-    return Math.ceil(totalChars * TOKEN_ESTIMATES.perCharacter + TOKEN_ESTIMATES.overheadPerBatch);
-}
-
-async function processBatch(batch, job, phase, processedCount, totalCount) {
-    const { imdbId, season, episode, targetLanguage } = job;
-    const progress = Math.round((processedCount / totalCount) * 100);
-    
-    console.log(`Processing ${phase} phase batch:`, {
-        imdbId,
-        season,
-        episode,
-        targetLanguage,
-        batchSize: batch.length,
-        progress: `${progress}%`,
-        processedCount,
-        totalCount
-    });
-
-    // Update progress in subtitle file
-    await updateTranslationProgress(
-        imdbId, 
-        season, 
-        episode, 
-        targetLanguage, 
-        progress,
-        processedCount,
-        totalCount
-    );
-
-    return processSubtitles(batch, imdbId, season, episode, targetLanguage);
-}
-
-// Create queue
-const translationQueue = new Queue(processWithStrategy, {
-    concurrent: 1,
-    maxRetries: 3,
-    retryDelay: 5000
+}, {
+    concurrent: 1,      // Process one file at a time
+    maxRetries: 3,      // Retry failed jobs up to 3 times
+    retryDelay: 5000,   // Wait 5 seconds between retries
+    afterProcessDelay: 1000  // Small delay between jobs
 });
 
-// Add event listeners
+// Add event listeners for queue monitoring
 translationQueue
     .on('task_finish', (taskId, result) => {
         console.log('Translation completed:', taskId);
