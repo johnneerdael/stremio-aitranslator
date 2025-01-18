@@ -8,6 +8,7 @@
       "configurable": true,
       "configurationRequired": true
     },
+    "configurationURL": "https://aitranslator.thepi.es/configure",
     "config": [
       {
         "key": "provider",

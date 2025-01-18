@@ -40,7 +40,9 @@ esbuild.build({
 
   // Copy static files
   if (fs.existsSync('src/config.html')) {
-    fs.copyFileSync('src/config.html', 'dist/config.html');
+    fs.copyFileSync('src/config.html', path.join('dist', 'config.html'));
+    // Also copy to static for direct access
+    fs.copyFileSync('src/config.html', path.join('static', 'config.html'));
   }
 })
 .catch((error) => {

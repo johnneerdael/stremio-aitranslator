@@ -146,4 +146,9 @@ app.post('/validate-key', async (req, res) => {
     }
 });
 
+// Serve config page
+app.get('/configure', (req, res) => {
+    res.sendFile(path.join(__dirname, 'config.html'));
+});
+
 startServer(); 

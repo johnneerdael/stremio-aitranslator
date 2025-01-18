@@ -37,6 +37,11 @@ aitranslator.yourdomain.com {
         header_up X-Forwarded-Proto {scheme}
     }
 
+    # Handle configuration page
+    handle /configure {
+        reverse_proxy aitranslator:7000
+    }
+
     # Security headers
     header {
         # Enable HSTS
