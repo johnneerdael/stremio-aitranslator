@@ -35,7 +35,7 @@ git add compose.yml compose-full.yml
 git add README.md PRODUCTION.md
 
 # Commit the changes
-git commit -m "refactor: improve configuration page with advanced settings and better UX
+git commit -m "refactor: improve configuration page with advanced settings and better UX \
 - Move config.html to src directory
 - Add connection status indicator
 - Add advanced settings panel
@@ -44,3 +44,49 @@ git commit -m "refactor: improve configuration page with advanced settings and b
 
 # Push changes
 git push origin main 
+
+# Initialize project with pnpm
+pnpm init
+
+# Add dependencies
+pnpm add express @google/generative-ai
+
+# Create Dockerfile
+cat > Dockerfile << 'EOF'
+FROM node:20-alpine
+
+# Install system utilities
+RUN apk add --no-cache \
+    bash \
+    curl \
+    htop \
+    nano \
+    procps \
+    tcpdump \
+    vim
+
+# Set working directory
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy package files
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY . .
+
+# Expose port
+EXPOSE 7000
+
+# Start the application
+CMD ["pnpm", "start"]
+EOF
+
+# Try building again
+docker compose up -d --build 
