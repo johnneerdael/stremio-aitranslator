@@ -25,7 +25,7 @@ A Stremio addon that automatically translates English subtitles to Dutch using G
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/addon-gemini-flash.git
+   git clone https://github.com/johnneerdael/stremio-aitranslator.git
    cd addon-gemini-flash
    ```
 
