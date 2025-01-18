@@ -23,6 +23,9 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install
 COPY . .
 RUN pnpm build
 
+# Rebuild sqlite3 for the specific Node.js version
+RUN npm rebuild sqlite3 --build-from-source
+
 # Production stage
 FROM node:20-alpine AS production
 WORKDIR /app
@@ -44,6 +47,9 @@ COPY --from=build /app/src/templates ./static/templates
 # Install production dependencies with rebuild
 RUN corepack enable && corepack prepare pnpm@latest --activate && \
     pnpm install --prod --force
+
+# Rebuild sqlite3 again in production stage
+RUN npm rebuild sqlite3 --build-from-source
 
 # Create data directory for credentials
 RUN mkdir -p data
