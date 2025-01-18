@@ -1,5 +1,7 @@
 # Stremio AI Translator Addon
 
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+
 An advanced Stremio addon that uses Google's Gemini Pro to translate subtitles in real-time. Supports mid-show starts and provides instant feedback while translating.
 
 ## Features
@@ -16,7 +18,10 @@ An advanced Stremio addon that uses Google's Gemini Pro to translate subtitles i
 
 - Docker and Docker Compose
 - Google Gemini API key (get it from [Google AI Studio](https://makersuite.google.com/app/apikey))
-- Node.js 20+ (for local development only)
+
+For development:
+- Node.js 20+
+- pnpm (`npm install -g pnpm`)
 
 ## Quick Start
 
@@ -40,7 +45,7 @@ This option runs both the addon and Caddy reverse proxy in Docker containers:
 
 2. Start the services:
 ```bash
-docker compose -f docker-compose.full.yml up -d
+docker compose -f compose-full.yml up -d
 ```
 
 ### Option 2: Addon Only (External Caddy)
@@ -49,7 +54,7 @@ If you're running Caddy on another server:
 
 1. Start the addon:
 ```bash
-docker compose up -d aitranslator
+docker compose up -d
 ```
 
 2. On your Caddy server, add this to your Caddyfile:

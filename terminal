@@ -68,7 +68,7 @@ RUN apk add --no-cache \
 # Set working directory
 WORKDIR /app
 
-# Install pnpm
+# Install pnpm using npm
 RUN npm install -g pnpm
 
 # Copy package files
@@ -90,3 +90,20 @@ EOF
 
 # Try building again
 docker compose up -d --build 
+
+# Add all changed files
+git add README.md Dockerfile compose.yml compose-full.yml
+
+# Commit changes
+git commit -m "feat: optimize Docker build with multi-stage setup \
+- Add multi-stage Docker build for smaller production image
+- Remove host dependency on Node.js/pnpm
+- Update documentation with clearer instructions
+- Fix compose file references"
+
+# Create new version tag
+git tag -a v1.1.0 -m "Version 1.1.0 - Optimized Docker build and improved documentation"
+
+# Push changes and tag
+git push origin main
+git push origin v1.1.0 

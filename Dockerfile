@@ -1,6 +1,29 @@
-FROM node:20-alpine
+# Build stage
+FROM node:20-alpine AS builder
 
-# Install debugging tools
+# Install pnpm
+RUN npm install -g pnpm
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN pnpm build
+
+# Production stage
+FROM node:20-alpine AS production
+
+# Install system utilities
 RUN apk add --no-cache \
     bash \
     curl \
@@ -10,33 +33,25 @@ RUN apk add --no-cache \
     tcpdump \
     vim
 
-# Create app directory
+# Set working directory
 WORKDIR /app
 
-# Install pnpm
+# Install pnpm and production dependencies only
 RUN npm install -g pnpm
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json ./
+COPY pnpm-lock.yaml ./
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Install production dependencies only
+RUN pnpm install --frozen-lockfile --prod
 
-# Copy source code
-COPY . .
+# Copy built files from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/static ./static
 
-# Build the application
-RUN pnpm run build
+# Expose port
+EXPOSE 7000
 
-# Environment variables
-ENV NODE_ENV=production
-ENV DEBUG=stremio:*
-ENV DEBUG_COLORS=true
-ENV DEBUG_DEPTH=10
-
-# Expose ports
-EXPOSE 11470
-EXPOSE 9229
-
-# Start with debugging enabled
-CMD ["node", "--inspect=0.0.0.0:9229", "dist/index.js"] 
+# Start the application
+CMD ["node", "dist/index.js"] 

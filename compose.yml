@@ -1,6 +1,8 @@
 services:
   aitranslator:
-    build: .
+    build:
+      context: .
+      target: production
     restart: unless-stopped
     ports:
       - "7000:7000"
