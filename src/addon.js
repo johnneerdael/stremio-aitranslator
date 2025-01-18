@@ -15,9 +15,9 @@ const CACHE_CONFIG = {
 
 const manifest = {
     id: 'org.stremio.aitranslator',
-    version: '1.0.0',
+    version: '1.3.0',
     name: 'AI Subtitle Translator',
-    description: 'Translates subtitles using Google Gemini Flash 1.5',
+    description: 'Translates subtitles using Google Gemini Flash 1.5 Free Tier',
     types: ['movie', 'series'],
     resources: ['subtitles'],
     catalogs: [],

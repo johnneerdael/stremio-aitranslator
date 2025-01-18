@@ -3,119 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini Flash Subtitle Translator</title>
+    <title>AI Translator Configuration</title>
     <style>
         :root {
-            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --primary: #818cf8;
-            --primary-hover: #6366f1;
-            --success: #10b981;
-            --error: #ef4444;
-            --text: #f8fafc;
-            --text-secondary: #94a3b8;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+            --primary: #6c5ce7;
+            --primary-hover: #5b4cdb;
+            --success: #00b894;
+            --error: #d63031;
+            --bg: #f5f5f5;
+            --card-bg: white;
+            --text: #2d3436;
+            --text-secondary: #636e72;
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-            background: var(--bg-gradient);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 2rem;
             color: var(--text);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1.6;
-            padding: 1rem;
+            line-height: 1.5;
         }
 
         .container {
-            width: 100%;
-            max-width: 800px;
-            margin: 2rem;
-        }
-
-        .card {
+            max-width: 600px;
+            margin: 0 auto;
             background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border-radius: 24px;
-            padding: 3rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            display: block;
+        }
+
+        h1 {
             text-align: center;
-            margin-bottom: 3rem;
-        }
-
-        .logo h1 {
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 1rem;
-            background: linear-gradient(to right, var(--primary), #a5b4fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.02em;
-        }
-
-        .logo p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-        }
-
-        .steps {
-            list-style: none;
-            margin: 2rem 0;
-        }
-
-        .steps li {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 1.5rem;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            transition: transform 0.2s;
-        }
-
-        .steps li:hover {
-            transform: translateX(5px);
-        }
-
-        .step-number {
-            background: var(--primary);
-            color: white;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            margin-right: 1rem;
-            flex-shrink: 0;
-        }
-
-        .steps a {
-            color: var(--primary);
-            text-decoration: none;
-            border-bottom: 1px dashed var(--primary);
-            transition: all 0.2s;
-        }
-
-        .steps a:hover {
-            color: var(--primary-hover);
-            border-bottom-style: solid;
-        }
-
-        form {
-            margin-top: 2rem;
+            margin: 0 0 2rem;
+            color: var(--text);
         }
 
         .form-group {
@@ -126,405 +55,187 @@
             display: block;
             margin-bottom: 0.5rem;
             color: var(--text-secondary);
-            font-size: 0.9rem;
+            font-weight: 500;
         }
 
-        input {
-            width: 100%;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            color: var(--text);
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 6px;
             font-size: 1rem;
-            transition: all 0.2s;
+            transition: border-color 0.2s;
         }
 
-        input:focus {
-            outline: none;
+        input[type="text"]:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+            outline: none;
         }
 
         button {
-            width: 100%;
-            padding: 1rem;
-            border: none;
-            border-radius: 12px;
             background: var(--primary);
             color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
             font-size: 1rem;
-            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background-color 0.2s;
+            font-weight: 500;
         }
 
         button:hover {
             background: var(--primary-hover);
-            transform: translateY(-2px);
         }
 
-        button:active {
-            transform: translateY(0);
-        }
-
-        .install-button {
-            background: var(--success);
-        }
-
-        .install-button:hover {
-            background: #0d9488;
-        }
-
-        #status {
-            margin-top: 1.5rem;
+        .status {
+            margin-top: 1rem;
             padding: 1rem;
-            border-radius: 12px;
+            border-radius: 6px;
             display: none;
-            animation: slideIn 0.3s ease;
         }
 
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .status.success {
+            background: var(--success);
+            color: white;
         }
 
-        .success {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            color: #34d399;
+        .status.error {
+            background: var(--error);
+            color: white;
         }
 
-        .error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            color: #f87171;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                margin: 1rem;
-            }
-
-            .card {
-                padding: 2rem;
-            }
-
-            .logo h1 {
-                font-size: 2rem;
-            }
-        }
-
-        .loading {
-            position: relative;
-            color: transparent !important;
-        }
-
-        .loading::after {
-            content: "";
-            position: absolute;
-            width: 1.25rem;
-            height: 1.25rem;
-            top: 50%;
-            left: 50%;
-            margin: -0.625rem 0 0 -0.625rem;
-            border: 2px solid white;
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: loading 0.75s linear infinite;
-        }
-
-        @keyframes loading {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .input-group {
-            position: relative;
+        .button-group {
             display: flex;
-            align-items: center;
-        }
-        
-        .toggle-password {
-            position: absolute;
-            right: 1rem;
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            padding: 0;
-            display: flex;
-            align-items: center;
-        }
-        
-        .toggle-password:hover {
-            color: var(--primary);
-            transform: none;
-        }
-        
-        .eye-icon {
-            width: 1.25rem;
-            height: 1.25rem;
-        }
-        
-        .help-text {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            margin-top: 0.5rem;
+            gap: 1rem;
+            margin-top: 1.5rem;
         }
 
-        .status-banner {
-            margin: 1rem 0;
-            padding: 1rem;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+        #validateBtn {
+            background: var(--text-secondary);
         }
 
-        .status-banner.connected {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-
-        .status-banner.error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        .version {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            margin-top: 0.5rem;
-        }
-
-        .text-button {
-            background: none;
-            border: none;
-            color: var(--primary);
-            font-size: 0.875rem;
-            cursor: pointer;
-            padding: 0.5rem;
-            margin: 1rem 0;
-            width: auto;
-        }
-
-        .text-button:hover {
-            color: var(--primary-hover);
-            transform: none;
-        }
-
-        .select-input {
-            width: 100%;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            color: var(--text);
-            font-size: 1rem;
-        }
-
-        .footer {
-            margin-top: 2rem;
-            text-align: center;
-            color: var(--text-secondary);
-        }
-
-        .footer a {
-            color: var(--primary);
-            text-decoration: none;
+        #validateBtn:hover {
+            background: var(--text);
         }
     </style>
 </head>
 <body>
-    <main class="container">
-        <article class="card">
-            <div class="logo">
-                <h1>Gemini Flash</h1>
-                <p>Real-time subtitle translation powered by Google's Gemini Pro</p>
-                <p class="version">Version 1.1.7
+    <div class="container">
+        <img src="logo.png" alt="AI Translator" class="logo">
+        <h1>AI Translator Configuration</h1>
+        
+        <div class="form-group">
+            <label for="geminiKey">Google Gemini API Key</label>
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="geminiKey" 
+                    placeholder="Enter your Gemini API key"
+                    autocomplete="off"
+                    spellcheck="false"
+                >
             </div>
+        </div>
 
-            <section>
-                <h2>Setup Guide</h2>
-                <ol class="steps">
-                    <li>
-                        <div class="step-number">1</div>
-                        <div>Get your Gemini API key from <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a></div>
-                    </li>
-                    <li>
-                        <div class="step-number">2</div>
-                        <div>Enter your API key below</div>
-                    </li>
-                    <li>
-                        <div class="step-number">3</div>
-                        <div>Click Save Configuration</div>
-                    </li>
-                    <li>
-                        <div class="step-number">4</div>
-                        <div>Install the addon in Stremio using the button that appears</div>
-                    </li>
-                </ol>
-            </section>
+        <div class="button-group">
+            <button id="validateBtn" onclick="validateKey()">Validate Key</button>
+            <button id="saveBtn" onclick="saveConfig()">Save Configuration</button>
+        </div>
 
-            <div id="connectionStatus" class="status-banner" style="display: none;">
-                <div class="status-icon"></div>
-                <span class="status-text"></span>
-            </div>
-
-            <section>
-                <form id="configForm" action="/save-credentials" method="POST">
-                    <div class="form-group">
-                        <label for="geminiApiKey">Gemini API Key</label>
-                        <div class="input-group">
-                            <input 
-                                type="password" 
-                                id="geminiApiKey" 
-                                name="geminiApiKey" 
-                                placeholder="Enter your API key"
-                                required
-                                autocomplete="off"
-                                spellcheck="false"
-                            >
-                            <button 
-                                type="button" 
-                                id="togglePassword" 
-                                class="toggle-password"
-                                aria-label="Toggle password visibility"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                </svg>
-                            </button>
-                        </div>
-                        <small class="help-text">Your API key will be securely stored on the server</small>
-                    </div>
-
-                    <div id="advancedSettings" class="advanced-settings" style="display: none;">
-                        <div class="form-group">
-                            <label for="targetLang">Default Target Language</label>
-                            <select id="targetLang" name="targetLang" class="select-input">
-                                <option value="en">English</option>
-                                <option value="es">Spanish</option>
-                                <option value="fr">French</option>
-                                <option value="de">German</option>
-                                <!-- Add more languages as needed -->
-                            </select>
-                        </div>
-                    </div>
-
-                    <button type="button" id="toggleAdvanced" class="text-button">
-                        Show Advanced Settings
-                    </button>
-
-                    <button type="submit" id="submitBtn">Save Configuration</button>
-                </form>
-                <div id="status"></div>
-            </section>
-
-            <footer class="footer">
-                <p>Need help? Check out our <a href="https://github.com/yourusername/stremio-aitranslator" target="_blank">documentation</a></p>
-            </footer>
-        </article>
-    </main>
+        <div id="status" class="status"></div>
+    </div>
 
     <script>
-        // Toggle password visibility
-        document.getElementById('togglePassword').addEventListener('click', function() {
-            const input = document.getElementById('geminiApiKey');
-            const type = input.type === 'password' ? 'text' : 'password';
-            input.type = type;
-            
-            // Update icon (you can add CSS to handle this)
-            this.classList.toggle('showing');
-        });
-
-        document.getElementById('configForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const submitBtn = document.getElementById('submitBtn');
+        async function validateKey() {
+            const geminiKey = document.getElementById('geminiKey').value;
             const status = document.getElementById('status');
-            const apiKey = document.getElementById('geminiApiKey').value;
+            const validateBtn = document.getElementById('validateBtn');
+            
+            if (!geminiKey) {
+                showStatus('Please enter an API key', 'error');
+                return;
+            }
 
-            submitBtn.classList.add('loading');
-            submitBtn.disabled = true;
+            validateBtn.disabled = true;
+            validateBtn.textContent = 'Validating...';
+            
+            try {
+                const response = await fetch('/validate-key', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ geminiApiKey: geminiKey })
+                });
 
+                if (response.ok) {
+                    showStatus('API key is valid!', 'success');
+                } else {
+                    const error = await response.text();
+                    showStatus(`Invalid API key: ${error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                validateBtn.disabled = false;
+                validateBtn.textContent = 'Validate Key';
+            }
+        }
+
+        async function saveConfig() {
+            const geminiKey = document.getElementById('geminiKey').value;
+            const status = document.getElementById('status');
+            const saveBtn = document.getElementById('saveBtn');
+            
+            if (!geminiKey) {
+                showStatus('Please enter an API key', 'error');
+                return;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+            
             try {
                 const response = await fetch('/save-credentials', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ geminiApiKey: apiKey }),
+                    body: JSON.stringify({ geminiApiKey: geminiKey })
                 });
 
-                status.style.display = 'block';
-                
                 if (response.ok) {
-                    status.className = 'success';
-                    status.textContent = 'Configuration saved successfully!';
-                    document.getElementById('geminiApiKey').value = '';
-                    
-                    // Add install button
-                    const installBtn = document.createElement('button');
-                    installBtn.textContent = 'Install in Stremio';
-                    installBtn.className = 'install-button';
-                    installBtn.onclick = () => {
-                        window.location.href = 'stremio://addon/https://aitranslator.yourdomain.com/manifest.json';
-                    };
-                    status.appendChild(document.createElement('br'));
-                    status.appendChild(installBtn);
+                    showStatus('Configuration saved successfully!', 'success');
                 } else {
                     const error = await response.text();
-                    status.className = 'error';
-                    status.textContent = error || 'Failed to save configuration. Please try again.';
+                    showStatus(`Error saving configuration: ${error}`, 'error');
                 }
             } catch (error) {
-                status.style.display = 'block';
-                status.className = 'error';
-                status.textContent = 'Network error. Please check your connection and try again.';
+                showStatus(`Error: ${error.message}`, 'error');
             } finally {
-                submitBtn.classList.remove('loading');
-                submitBtn.disabled = false;
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Configuration';
             }
-        });
-
-        // Toggle advanced settings
-        document.getElementById('toggleAdvanced').addEventListener('click', function() {
-            const advancedSettings = document.getElementById('advancedSettings');
-            const isHidden = advancedSettings.style.display === 'none';
-            advancedSettings.style.display = isHidden ? 'block' : 'none';
-            this.textContent = isHidden ? 'Hide Advanced Settings' : 'Show Advanced Settings';
-        });
-
-        // Check connection status on load
-        async function checkConnection() {
-            const statusBanner = document.getElementById('connectionStatus');
-            try {
-                const response = await fetch('/health');
-                if (response.ok) {
-                    statusBanner.className = 'status-banner connected';
-                    statusBanner.querySelector('.status-text').textContent = 'Connected and ready';
-                } else {
-                    throw new Error('Service unavailable');
-                }
-            } catch (error) {
-                statusBanner.className = 'status-banner error';
-                statusBanner.querySelector('.status-text').textContent = 'Connection error';
-            }
-            statusBanner.style.display = 'flex';
         }
 
-        // Check connection status periodically
-        checkConnection();
-        setInterval(checkConnection, 30000);
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 3000);
+            }
+        }
     </script>
 </body>
 </html> 

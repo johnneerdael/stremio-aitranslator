@@ -673,3 +673,48 @@ git push origin v1.2.3
 # Rebuild with new configuration
 docker compose -f compose-full.yml down
 docker compose -f compose-full.yml up -d 
+
+# Update files
+git add src/index.js src/config.html esbuild.config.js
+
+# Commit changes
+git commit -m "fix: update config page handling \
+- Add proper config.html with styling
+- Fix static file serving paths
+- Update build process for config.html"
+
+# Create new version tag
+git tag -a v1.2.4 -m "Version 1.2.4 - Fix config page"
+
+# Push changes
+git push origin main
+git push origin v1.2.4
+
+# Rebuild
+docker compose down
+docker compose up -d --build 
+
+# Update versions
+sed -i 's/"version": ".*"/"version": "1.3.0"/' package.json
+sed -i 's/"version": ".*"/"version": "1.3.0"/' manifest.json
+sed -i "s/version: '.*'/version: '1.3.0'/" src/addon.js
+
+# Commit changes
+git add package.json manifest.json src/addon.js
+git commit -m "chore: bump version to 1.3.0 \
+- Update package.json version
+- Update manifest.json version
+- Update addon.js version
+- Add validate key functionality
+- Enhance config page UI"
+
+# Create new version tag
+git tag -a v1.3.0 -m "Version 1.3.0 - Enhanced configuration interface"
+
+# Push changes
+git push origin main
+git push origin v1.3.0
+
+# Rebuild
+docker compose down
+docker compose up -d --build 

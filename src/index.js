@@ -9,7 +9,7 @@ const debug = require('debug')('stremio:server');
 
 const app = express();
 const PORT = process.env.PORT || 7000;
-const STATIC_PATH = path.join(process.cwd(), 'static');
+const STATIC_PATH = path.join(__dirname, '..', 'static');
 
 debug('Initializing server...');
 
@@ -87,7 +87,7 @@ app.post('/save-credentials', async (req, res) => {
 
 // Configuration page
 app.get('/config', (req, res) => {
-    res.sendFile(path.join(STATIC_PATH, 'config.html'));
+    res.sendFile(path.join(__dirname, 'config.html'));
 });
 
 // Load existing credentials if available
@@ -124,5 +124,26 @@ async function startServer() {
     }
     console.log('=========================================================');
 }
+
+// Configuration endpoints
+app.post('/validate-key', async (req, res) => {
+    const { geminiApiKey } = req.body;
+    
+    if (!geminiApiKey) {
+        return res.status(400).send('API key is required');
+    }
+
+    try {
+        const isValid = await validateGeminiKey(geminiApiKey);
+        if (isValid) {
+            res.status(200).send('API key is valid');
+        } else {
+            res.status(400).send('Invalid API key');
+        }
+    } catch (error) {
+        console.error('Error validating key:', error);
+        res.status(500).send('Error validating key');
+    }
+});
 
 startServer(); 
