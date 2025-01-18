@@ -1,11 +1,11 @@
-import express from 'express';
-import cors from 'cors';
-import { serveHTTP } from 'stremio-addon-sdk';
-import { addonInterface } from './addon.js';
-import { validateGeminiKey, initializeGemini } from './translateProvider.js';
-import fs from 'fs/promises';
-import path from 'path';
-import debug from 'debug';
+const express = require('express');
+const cors = require('cors');
+const { serveHTTP } = require('stremio-addon-sdk');
+const { addonInterface } = require('./addon');
+const { validateGeminiKey, initializeGemini } = require('./translateProvider');
+const fs = require('fs').promises;
+const path = require('path');
+const debug = require('debug');
 
 const app = express();
 const PORT = process.env.PORT || 11470;

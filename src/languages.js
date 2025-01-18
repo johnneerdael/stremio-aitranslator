@@ -1,4 +1,4 @@
-import geminiLanguages from '../langs/translateGeminiFlash.lang.json';
+const geminiLanguages = require('../langs/translateGeminiFlash.lang.json');
 
 /**
  * Gets the language code from a language name
@@ -31,7 +31,7 @@ function getAllLanguages() {
     return Object.values(geminiLanguages);
 }
 
-export const languages = {
+module.exports = {
     getLanguageCode,
     getLanguageName,
     getAllLanguages

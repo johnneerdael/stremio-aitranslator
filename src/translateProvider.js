@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
 
 let genAI = null;
 let model = null;
@@ -23,7 +23,7 @@ const translationSchema = {
  * Initializes the Gemini client
  * @param {string} apiKey - Gemini API key
  */
-export function initializeGemini(apiKey) {
+function initializeGemini(apiKey) {
     genAI = new GoogleGenerativeAI(apiKey);
     model = genAI.getGenerativeModel({
         model: "gemini-1.5-flash",
@@ -42,7 +42,7 @@ export function initializeGemini(apiKey) {
  * @param {string} apiKey - API key to validate
  * @returns {Promise<boolean>} Whether the key is valid
  */
-export async function validateGeminiKey(apiKey) {
+async function validateGeminiKey(apiKey) {
     try {
         const tempGenAI = new GoogleGenerativeAI(apiKey);
         const tempModel = tempGenAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -62,7 +62,7 @@ export async function validateGeminiKey(apiKey) {
  * @param {string} targetLanguage - Target language code
  * @returns {Promise<Array<string>>} Translated texts
  */
-export async function translateBatch(texts, targetLanguage) {
+async function translateBatch(texts, targetLanguage) {
     if (!model) {
         throw new Error('Gemini client not initialized');
     }
@@ -100,12 +100,12 @@ export async function translateBatch(texts, targetLanguage) {
  * @param {string} targetLanguage - Target language code
  * @returns {Promise<string>} Translated text
  */
-export async function translateText(text, targetLanguage) {
+async function translateText(text, targetLanguage) {
     const result = await translateBatch([text], targetLanguage);
     return result[0];
 }
 
-export default {
+module.exports = {
     initializeGemini,
     validateGeminiKey,
     translateBatch,

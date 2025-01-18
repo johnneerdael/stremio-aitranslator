@@ -1,6 +1,6 @@
-import Queue from 'better-queue';
-import { processSubtitles } from './processfiles.js';
-import { updateTranslationProgress } from './subtitles.js';
+const Queue = require('better-queue');
+const { processSubtitles } = require('./processfiles');
+const { updateTranslationProgress } = require('./subtitles');
 
 // Batch sizing configuration based on tokens
 const BATCH_STRATEGY = {
@@ -209,4 +209,4 @@ translationQueue
         console.log('Retrying translation:', taskId);
     });
 
-export default translationQueue; 
+module.exports = translationQueue; 
