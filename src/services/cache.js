@@ -1,10 +1,11 @@
 const ConfigService = require('./config');
+const DatabaseService = require('./database');
 const debug = require('debug')('stremio:cache');
 
 class CacheService {
     static instance;
-    cache = new Map();
     config = null;
+    db = null;
 
     static async getInstance() {
         if (!CacheService.instance) {
@@ -16,17 +17,23 @@ class CacheService {
 
     async init() {
         this.config = await ConfigService.getInstance();
+        this.db = await DatabaseService.getInstance();
+        
+        // Start cleanup job
+        setInterval(async () => {
+            const cacheTime = await this.config.get('cacheTime');
+            await this.db.cleanup(cacheTime * 60 * 60 * 1000);
+        }, 60 * 60 * 1000); // Run every hour
     }
 
     async get(key) {
-        const item = this.cache.get(key);
+        const item = await this.db.getTranslation(key);
         if (!item) return null;
 
         const cacheTime = await this.config.get('cacheTime');
         const expiryTime = item.timestamp + (cacheTime * 60 * 60 * 1000);
 
         if (Date.now() > expiryTime) {
-            this.cache.delete(key);
             return null;
         }
 
@@ -34,19 +41,26 @@ class CacheService {
             debug(`Cache hit: ${key}`);
         }
 
-        return item.value;
+        return {
+            sourceLang: item.source_language,
+            targetLang: item.target_language,
+            originalText: item.original_text,
+            translatedText: item.translated_text,
+            videoId: item.video_id
+        };
     }
 
     async set(key, value) {
-        this.cache.set(key, {
-            value,
-            timestamp: Date.now()
-        });
+        await this.db.setTranslation(key, value);
 
         if (await this.config.isDebugMode()) {
             debug(`Cache set: ${key}`);
         }
     }
+
+    async getStats() {
+        return await this.db.getStats();
+    }
 }
 
-module.exports = CacheService; 
+module.exports = CacheService;

@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "langs"
+		},
+		{
+			"path": "src"
+		},
+		{
+			"path": "static"
+		},
+		{
+			"path": "subtitles"
+		}
+	],
+	"settings": {}
+}
