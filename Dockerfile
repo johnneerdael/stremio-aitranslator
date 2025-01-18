@@ -1,7 +1,7 @@
 FROM node:20-alpine AS base
 
 # Install build dependencies
-RUN apk add --no-cache python3 make g++ gcc
+RUN apk add --no-cache python3 make g++ gcc sqlite-dev
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -27,8 +27,8 @@ RUN pnpm build
 FROM node:20-alpine AS production
 WORKDIR /app
 
-# Install build dependencies
-RUN apk add --no-cache python3 make g++ gcc
+# Install runtime dependencies for native modules
+RUN apk add --no-cache python3 make g++ gcc sqlite-dev
 
 # Create necessary directories
 RUN mkdir -p dist/templates static/templates subtitles/dut langs
@@ -41,9 +41,9 @@ COPY --from=build /app/package.json ./
 COPY --from=build /app/src/templates ./dist/templates
 COPY --from=build /app/src/templates ./static/templates
 
-# Install production dependencies only
+# Install production dependencies with rebuild
 RUN corepack enable && corepack prepare pnpm@latest --activate && \
-    pnpm install --prod
+    pnpm install --prod --force
 
 # Create data directory for credentials
 RUN mkdir -p data

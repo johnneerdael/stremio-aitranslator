@@ -8,7 +8,7 @@ let config, queue, cache;
 
 const manifest = {
     id: 'stremio-aitranslator',
-    version: '1.3.0',
+    version: '1.3.18',
     name: 'Auto Subtitle Translate from English to Dutch',
     description: 'Translates subtitles using Google Gemini Flash 1.5 Free Tier',
     types: ['movie', 'series'],
