@@ -1,7 +1,17 @@
-FROM node:20-alpine AS base
+FROM node:20.11.0-slim AS base
 
 # Install build dependencies
-RUN apk add --no-cache python3 make g++ gcc sqlite-dev
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-distutils \
+    python3-pip \
+    make \
+    g++ \
+    gcc \
+    git \
+    sqlite3 \
+    libsqlite3-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -21,17 +31,32 @@ CMD ["pnpm", "dev"]
 FROM base AS build
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install
 COPY . .
-RUN pnpm build
 
-# Rebuild sqlite3 for the specific Node.js version
+# Set build configuration
+ENV CFLAGS="-O2"
+ENV CXXFLAGS="-O2"
+ENV npm_config_build_from_source=true
+ENV npm_config_sqlite=/usr
+ENV npm_config_sqlite_libname=sqlite3
 RUN npm rebuild sqlite3 --build-from-source
 
+RUN pnpm build
+
 # Production stage
-FROM node:20-alpine AS production
+FROM node:20.11.0-slim AS production
 WORKDIR /app
 
-# Install runtime dependencies for native modules
-RUN apk add --no-cache python3 make g++ gcc sqlite-dev
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-distutils \
+    python3-pip \
+    make \
+    g++ \
+    gcc \
+    sqlite3 \
+    libsqlite3-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create necessary directories
 RUN mkdir -p dist/templates static/templates subtitles/dut langs
@@ -44,12 +69,14 @@ COPY --from=build /app/package.json ./
 COPY --from=build /app/src/templates ./dist/templates
 COPY --from=build /app/src/templates ./static/templates
 
-# Install production dependencies with rebuild
+# Install production dependencies
 RUN corepack enable && corepack prepare pnpm@latest --activate && \
-    pnpm install --prod --force
-
-# Rebuild sqlite3 again in production stage
-RUN npm rebuild sqlite3 --build-from-source
+    CFLAGS="-O2" CXXFLAGS="-O2" \
+    npm_config_build_from_source=true \
+    npm_config_sqlite=/usr \
+    npm_config_sqlite_libname=sqlite3 \
+    pnpm install --prod --force && \
+    npm rebuild sqlite3 --build-from-source
 
 # Create data directory for credentials
 RUN mkdir -p data
@@ -60,4 +87,4 @@ RUN chown -R node:node /app
 USER node
 
 EXPOSE 7000
-CMD ["node", "dist/index.js"] 
+CMD ["node", "dist/index.js"]
