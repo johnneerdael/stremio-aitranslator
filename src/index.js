@@ -8,7 +8,7 @@ const path = require('path');
 const debug = require('debug')('stremio:server');
 
 const app = express();
-const PORT = process.env.PORT || 11470;
+const PORT = process.env.PORT || 7000;
 const STATIC_PATH = path.join(process.cwd(), 'static');
 
 debug('Initializing server...');

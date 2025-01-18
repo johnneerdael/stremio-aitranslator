@@ -592,3 +592,44 @@ git push origin v1.2.0
 
 # Rebuild with new version
 DEBUG=stremio:* docker compose up -d --build 
+
+# Remove duplicate index.js from root
+rm index.js
+
+# Update package.json to ensure correct main file
+sed -i 's/"main": "index.js"/"main": "src\/index.js"/' package.json 
+
+# Remove root index.js
+rm index.js
+
+# Update files
+git add src/index.js Caddyfile compose-full.yml
+git rm index.js
+
+# Commit changes
+git commit -m "fix: resolve port conflicts and file duplication \
+- Remove duplicate index.js from root
+- Update ports to be consistent (7000)
+- Fix Caddy reverse proxy configuration
+- Update compose file port mapping"
+
+# Try rebuilding
+docker compose down
+docker compose up -d --build 
+
+# Update translateProvider.js
+git add src/translateProvider.js
+git commit -m "fix: update schema type definitions in translateProvider \
+- Remove SchemaType import
+- Use string literals for schema types"
+
+# Create new version tag
+git tag -a v1.2.2 -m "Version 1.2.2 - Fix schema types"
+
+# Push changes
+git push origin main
+git push origin v1.2.2
+
+# Rebuild
+docker compose down
+docker compose up -d --build 

@@ -1,16 +1,16 @@
-const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 let genAI = null;
 let model = null;
 
 // Schema for subtitle translations
 const translationSchema = {
-    type: SchemaType.OBJECT,
+    type: "object",
     properties: {
         texts: {
-            type: SchemaType.ARRAY,
+            type: "array",
             items: {
-                type: SchemaType.STRING,
+                type: "string",
                 description: "Translated subtitle text"
             },
             description: "Array of translated subtitle texts"

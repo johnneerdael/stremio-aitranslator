@@ -23,7 +23,7 @@ aitranslator.thepi.es {
     }
 
     # Main reverse proxy
-    reverse_proxy localhost:11470 {
+    reverse_proxy localhost:7000 {
         # Timeouts
         timeout 300s
         
