@@ -1,44 +1,25 @@
 {
-    "id": "stremio-aitranslator",
-    "version": "1.3.0",
-    "name": "Auto Subtitle Translate from English to Dutch",
-    "logo": "./subtitles/logo.png",
+    "id": "stremio.aitranslator",
+    "version": "1.3.14",
+    "name": "AI Subtitle Translator",
+    "description": "Translates subtitles using Google Gemini Flash 1.5 Free Tier",
+    "background": "/wallpaper.png",
+    "logo": "/logo.png",
     "configurable": true,
     "behaviorHints": {
-      "configurable": true,
-      "configurationRequired": true
+        "configurable": true,
+        "configurationRequired": true
     },
-    "configurationURL": "https://aitranslator.thepi.es/configure",
-    "config": [
-      {
-        "key": "provider",
-        "title": "Provider",
-        "type": "select",
-        "required": true,
-        "options": ["gemini-flash-1.5"]
-      },
-      {
-        "key": "apikey",
-        "title": "API Key",
-        "type": "text",
-        "required": false,
-        "dependencies": [
-          {
-            "key": "provider",
-            "value": ["gemini-flash-1.5"]
-          }
-        ]
-      },
-      {
-        "key": "translateto",
-        "title": "Translate to",
-        "type": "select",
-        "required": true,
-        "options": ["Dutch"]
-      }
+    "configurationURL": "/configure",
+    "types": [
+        "movie",
+        "series"
     ],
-    "description": "This addon takes subtitles from OpenSubtitlesV3 then translates into desired language using Gemini Flash 1.5 Free Tier.",
-    "types": ["series", "movie"],
     "catalogs": [],
-    "resources": ["subtitles"]
+    "resources": [
+        "subtitles"
+    ],
+    "idPrefixes": [
+        "tt"
+    ]
 }

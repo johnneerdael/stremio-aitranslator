@@ -39,11 +39,24 @@ const PORT = process.env.PORT || 7000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static('static'));
+app.use(express.static('src/assets'));
+
+// Set view engine
+app.engine('html', require('ejs').renderFile);
+app.set('view engine', 'html');
+app.set('views', path.join(__dirname, 'templates'));
 
 let db;
 (async () => {
   db = await initDb();
 })();
+
+// Landing page
+app.get('/', (req, res) => {
+  res.render('landing.html', {
+    manifest: require('../manifest.json')
+  });
+});
 
 // Configuration page
 app.get('/configure', async (req, res) => {
