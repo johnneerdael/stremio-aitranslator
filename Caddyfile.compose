@@ -1,19 +1,16 @@
 {
-    email your-email@domain.com
-    # Cloudflare DNS API token for automatic SSL
-    tls {
-        dns cloudflare 9a283BrVFINKTGY21lwuSylP8Jtsbr8Hukstu5do
-        resolvers 1.1.1.1
+    # Admin API is only accessible internally
+    admin off
+    
+    # Optional: Persist certificates in Docker volume
+    storage file_system {
+        root /data/caddy
     }
 }
 
-aitranslator.thepi.es {
+aitranslator.yourdomain.com {
     log {
-        output file /var/log/caddy/aitranslator.log {
-            roll_size 10mb
-            roll_keep 5
-            roll_keep_for 720h
-        }
+        output stdout
         format json
     }
 
@@ -22,8 +19,8 @@ aitranslator.thepi.es {
         respond "OK" 200
     }
 
-    # Main reverse proxy
-    reverse_proxy localhost:7000 {
+    # Main reverse proxy - note the container name instead of localhost
+    reverse_proxy aitranslator:7000 {
         # Timeouts
         timeout 300s
         
@@ -38,11 +35,6 @@ aitranslator.thepi.es {
         header_up X-Real-IP {remote_host}
         header_up X-Forwarded-For {remote_host}
         header_up X-Forwarded-Proto {scheme}
-        
-        # Compression
-        transport http {
-            compression
-        }
     }
 
     # Security headers
@@ -61,13 +53,6 @@ aitranslator.thepi.es {
         -Server
     }
 
-    # Enable Gzip compression
-    encode gzip
-
-    # TLS configuration
-    tls {
-        protocols tls1.2 tls1.3
-        curves x25519 secp521r1 secp384r1 secp256r1
-        ciphers TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256 TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
-    }
+    # Enable compression
+    encode gzip zstd
 } 

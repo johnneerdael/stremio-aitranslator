@@ -633,3 +633,43 @@ git push origin v1.2.2
 # Rebuild
 docker compose down
 docker compose up -d --build 
+
+# Check current content of translateProvider.js
+cat src/translateProvider.js
+
+# Make sure the changes are applied
+nano src/translateProvider.js 
+
+# Stop container
+docker compose down
+
+# Clean build artifacts
+rm -rf dist/*
+
+# Rebuild
+DEBUG=stremio:* docker compose up -d --build
+
+# Check logs immediately
+docker compose logs -f 
+
+# Create new Caddyfile versions
+mv Caddyfile Caddyfile.external
+cp Caddyfile.compose Caddyfile
+
+# Update files
+git add Caddyfile.external Caddyfile.compose compose-full.yml
+git commit -m "feat: add separate Caddyfile configurations \
+- Add external hosted Caddy config
+- Add Docker Compose Caddy config
+- Update compose-full.yml to use new config"
+
+# Create new version tag
+git tag -a v1.2.3 -m "Version 1.2.3 - Enhanced Caddy configuration"
+
+# Push changes
+git push origin main
+git push origin v1.2.3
+
+# Rebuild with new configuration
+docker compose -f compose-full.yml down
+docker compose -f compose-full.yml up -d 

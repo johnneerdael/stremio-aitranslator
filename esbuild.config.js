@@ -18,6 +18,8 @@ esbuild.build({
   platform: 'node',
   target: 'node20',
   outfile: 'dist/index.js',
+  allowOverwrite: true,
+  metafile: true,
   external: [
     'express',
     'cors',

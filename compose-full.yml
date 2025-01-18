@@ -6,6 +6,8 @@ services:
       - "7000"
     volumes:
       - ./data:/app/data
+    networks:
+      - internal
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.aitranslator.rule=Host(`aitranslator.yourdomain.com`)"
@@ -19,9 +21,20 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./Caddyfile.compose:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    networks:
+      - internal
+      - web
+    depends_on:
+      - aitranslator
+
+networks:
+  internal:
+    internal: true
+  web:
+    external: false
 
 volumes:
   caddy_data:
