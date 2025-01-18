@@ -1,6 +1,6 @@
 {
     "id": "stremio-aitranslator",
-    "version": "0.0.2",
+    "version": "1.2.0",
     "name": "Auto Subtitle Translate from English to Dutch",
     "logo": "./subtitles/logo.png",
     "configurable": true,

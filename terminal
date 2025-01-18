@@ -568,3 +568,27 @@ git tag -a v1.1.9 -m "Version 1.1.9 - Enhanced gitignore"
 # Push changes
 git push origin main
 git push origin v1.1.9 
+
+# Update versions
+sed -i 's/"version": ".*"/"version": "1.2.0"/' package.json
+sed -i 's/"version": ".*"/"version": "1.2.0"/' manifest.json
+sed -i 's/Version .*/Version 1.2.0/' static/config.html
+
+# Commit changes
+git add package.json manifest.json static/config.html
+git commit -m "chore: bump version to 1.2.0 \
+- Update package.json version
+- Update manifest.json version
+- Update config.html version
+- Clean up Dockerfile
+- Enhance .gitignore"
+
+# Create new version tag
+git tag -a v1.2.0 -m "Version 1.2.0 - Production ready release"
+
+# Push changes
+git push origin main
+git push origin v1.2.0
+
+# Rebuild with new version
+DEBUG=stremio:* docker compose up -d --build 

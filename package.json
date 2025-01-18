@@ -1,6 +1,6 @@
 {
   "name": "stremio-aitranslator",
-  "version": "1.1.9",
+  "version": "1.2.0",
   "description": "Stremio addon for real-time subtitle translation using Google's Gemini AI",
   "main": "src/index.js",
   "type": "commonjs",

@@ -19,9 +19,6 @@ COPY . .
 # Create required directories
 RUN mkdir -p static dist subtitles/dut
 
-# Copy logo if it exists in static
-COPY static/logo.png static/logo.png || true
-
 # Build the application
 RUN pnpm build
 
@@ -52,8 +49,8 @@ RUN pnpm install --prod
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/static ./static || true
-COPY --from=builder /app/langs ./langs || true
+COPY --from=builder /app/static ./static
+COPY --from=builder /app/langs ./langs
 
 # Create directories if they don't exist
 RUN mkdir -p static langs
