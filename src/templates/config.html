@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Translator Configuration</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.14.0/cdn/themes/light.css" />
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.14.0/cdn/shoelace-autoloader.js"></script>
     <style>
         :root {
             --primary: #6c5ce7;
@@ -22,7 +24,6 @@
             margin: 0;
             padding: 2rem;
             color: var(--text);
-            line-height: 1.5;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -30,26 +31,13 @@
         }
 
         .container {
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             padding: 2rem;
             border-radius: 12px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-
-        .logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 1.5rem;
-            display: block;
-        }
-
-        h1 {
-            text-align: center;
-            margin: 0 0 2rem;
-            color: var(--text);
         }
 
         .form-group {
@@ -63,13 +51,10 @@
             font-weight: 500;
         }
 
-        .input-group {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        input[type="text"] {
-            flex: 1;
+        input[type="text"],
+        input[type="password"],
+        select {
+            width: 100%;
             padding: 0.75rem;
             border: 2px solid #ddd;
             border-radius: 6px;
@@ -77,9 +62,17 @@
             transition: border-color 0.2s;
         }
 
-        input[type="text"]:focus {
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        select:focus {
             border-color: var(--primary);
             outline: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
         }
 
         button {
@@ -90,12 +83,16 @@
             border-radius: 6px;
             font-size: 1rem;
             cursor: pointer;
-            transition: background-color 0.2s;
-            font-weight: 500;
+            transition: background 0.2s;
         }
 
         button:hover {
             background: var(--primary-hover);
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
         }
 
         .status {
@@ -115,51 +112,99 @@
             color: white;
         }
 
-        .button-group {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1.5rem;
+        .version {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-top: 2rem;
+            font-size: 0.9rem;
         }
 
-        #validateBtn {
-            background: var(--text-secondary);
-        }
-
-        #validateBtn:hover {
-            background: var(--text);
+        .description {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            text-align: center;
+            line-height: 1.6;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <img src="logo.png" alt="AI Translator" class="logo">
         <h1>AI Translator Configuration</h1>
         
+        <p class="description">
+            This addon translates English subtitles to Dutch using Google's Gemini AI.
+            Configure your settings below to get started.
+        </p>
+
         <div class="form-group">
             <label for="geminiKey">Google Gemini API Key</label>
-            <div class="input-group">
-                <input 
-                    type="text" 
-                    id="geminiKey" 
-                    placeholder="Enter your Gemini API key"
-                    autocomplete="off"
-                    spellcheck="false"
-                >
-            </div>
+            <input 
+                id="geminiKey"
+                type="password"
+                placeholder="Enter your Gemini API key"
+                autocomplete="off"
+            />
+        </div>
+
+        <div class="form-group">
+            <label for="translateTo">Target Language</label>
+            <select id="translateTo">
+                <% languages.forEach(function(lang) { %>
+                    <option value="<%= lang.code %>" 
+                            <%= config.translateTo === lang.code ? 'selected' : '' %>>
+                        <%= lang.name %>
+                    </option>
+                <% }); %>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="cacheTime">Cache Duration (hours)</label>
+            <input 
+                id="cacheTime"
+                type="number"
+                value="24"
+                min="1"
+                max="168"
+            />
+            <small>How long to cache translations (1-168 hours)</small>
+        </div>
+
+        <div class="form-group">
+            <label for="maxConcurrent">Max Concurrent Translations</label>
+            <input 
+                id="maxConcurrent"
+                type="number"
+                value="3"
+                min="1"
+                max="10"
+            />
+            <small>Maximum number of simultaneous translations (1-10)</small>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="debugMode" />
+                Enable Debug Mode
+            </label>
+            <small>Log detailed information about translations</small>
         </div>
 
         <div class="button-group">
-            <button id="validateBtn" onclick="validateKey()">Validate Key</button>
-            <button id="saveBtn" onclick="saveConfig()">Save Configuration</button>
+            <button onclick="validateKey()" id="validateBtn">Validate Key</button>
+            <button onclick="saveConfig()" id="saveBtn">Save Configuration</button>
         </div>
 
         <div id="status" class="status"></div>
+
+        <div class="version">
+            Version <%= version %>
+        </div>
     </div>
 
     <script>
         async function validateKey() {
             const geminiKey = document.getElementById('geminiKey').value;
-            const status = document.getElementById('status');
             const validateBtn = document.getElementById('validateBtn');
             
             if (!geminiKey) {
@@ -195,7 +240,10 @@
 
         async function saveConfig() {
             const geminiKey = document.getElementById('geminiKey').value;
-            const status = document.getElementById('status');
+            const translateTo = document.getElementById('translateTo').value;
+            const cacheTime = document.getElementById('cacheTime').value;
+            const maxConcurrent = document.getElementById('maxConcurrent').value;
+            const debugMode = document.getElementById('debugMode').checked;
             const saveBtn = document.getElementById('saveBtn');
             
             if (!geminiKey) {
@@ -212,7 +260,13 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ geminiApiKey: geminiKey })
+                    body: JSON.stringify({ 
+                        geminiApiKey: geminiKey,
+                        translateTo: translateTo,
+                        cacheTime: parseInt(cacheTime),
+                        maxConcurrent: parseInt(maxConcurrent),
+                        debugMode: debugMode
+                    })
                 });
 
                 if (response.ok) {

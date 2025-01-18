@@ -1,162 +1,127 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+const sqlite3 = require('sqlite3');
+const { open } = require('sqlite');
 const { serveHTTP } = require('stremio-addon-sdk');
 const addonInterface = require('./addon');
-const { validateGeminiKey, initializeGemini } = require('./translateProvider');
-const fs = require('fs').promises;
-const path = require('path');
-const debug = require('debug')('stremio:server');
+const { validateGeminiKey } = require('./translateProvider');
+const LanguageService = require('./services/languages');
+
+// Default configuration
+const DEFAULT_CONFIG = {
+  cacheTime: 24, // hours
+  maxConcurrent: 3,
+  debugMode: false,
+  translateTo: 'Dutch'
+};
+
+// Initialize database
+async function initDb() {
+  const db = await open({
+    filename: 'data/config.db',
+    driver: sqlite3.Database
+  });
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS config (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
+  `);
+
+  return db;
+}
 
 const app = express();
 const PORT = process.env.PORT || 7000;
-const STATIC_PATH = path.join(__dirname, '..', 'static');
 
-debug('Initializing server...');
-
-// Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(STATIC_PATH));
+app.use(express.static('static'));
 
-// Configure template engine
-app.set('view engine', 'html');
-app.set('views', path.join(__dirname, 'templates'));
-app.engine('html', require('ejs').renderFile);
-
-// Request logging middleware
-app.use((req, res, next) => {
-    debug(`${req.method} ${req.url}`);
-    next();
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-    debug('Error:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.status(200).send('OK');
-});
-
-// Debug endpoints
-if (process.env.NODE_ENV === 'development') {
-    app.get('/debug/vars', (req, res) => {
-        res.json({
-            env: process.env.NODE_ENV,
-            nodeVersion: process.version,
-            memoryUsage: process.memoryUsage(),
-            uptime: process.uptime(),
-            debugEnabled: debug.enabled
-        });
-    });
-
-    app.get('/debug/config', (req, res) => {
-        res.json({
-            port: PORT,
-            cors: true,
-            addonName: addonInterface.manifest.name,
-            addonVersion: addonInterface.manifest.version
-        });
-    });
-}
-
-// Configuration endpoint
-app.post('/save-credentials', async (req, res) => {
-    const { geminiApiKey } = req.body;
-    
-    if (!geminiApiKey) {
-        return res.status(400).send('API key is required');
-    }
-
-    try {
-        // Validate Gemini API key
-        const isValid = await validateGeminiKey(geminiApiKey);
-        if (!isValid) {
-            return res.status(400).send('Invalid Gemini API key');
-        }
-
-        // Save credentials
-        await fs.writeFile('credentials.json', JSON.stringify({ geminiApiKey }, null, 2));
-        
-        // Initialize Gemini client
-        initializeGemini(geminiApiKey);
-
-        res.status(200).send('Credentials saved successfully');
-    } catch (error) {
-        console.error('Error saving credentials:', error);
-        res.status(500).send('Error saving credentials');
-    }
-});
+let db;
+(async () => {
+  db = await initDb();
+})();
 
 // Configuration page
-app.get('/config', (req, res) => {
-    res.sendFile(path.join(__dirname, 'config.html'));
+app.get('/configure', async (req, res) => {
+  const config = await getConfig();
+  const languageService = await LanguageService.getInstance();
+  const languages = await languageService.getLanguages();
+
+  res.render('config.html', {
+    version: require('../package.json').version,
+    config,
+    languages
+  });
 });
 
-// Load existing credentials if available
-async function loadCredentials() {
+// Get current configuration
+async function getConfig() {
+  const config = {...DEFAULT_CONFIG};
+  const rows = await db.all('SELECT key, value FROM config');
+  
+  rows.forEach(row => {
+    if (row.key === 'geminiApiKey') return; // Don't expose API key
     try {
-        const data = await fs.readFile('credentials.json', 'utf8');
-        const { geminiApiKey } = JSON.parse(data);
-        if (geminiApiKey) {
-            const isValid = await validateGeminiKey(geminiApiKey);
-            if (isValid) {
-                initializeGemini(geminiApiKey);
-                return true;
-            }
-        }
-    } catch (error) {
-        console.log('No valid credentials found');
+      config[row.key] = JSON.parse(row.value);
+    } catch {
+      config[row.key] = row.value;
     }
-    return false;
+  });
+  
+  return config;
 }
 
-// Start the server
-async function startServer() {
-    const hasCredentials = await loadCredentials();
+// Save credentials endpoint
+app.post('/save-credentials', async (req, res) => {
+  const { 
+    geminiApiKey,
+    translateTo,
+    cacheTime,
+    maxConcurrent,
+    debugMode
+  } = req.body;
 
-    // Start the Stremio addon
-    serveHTTP(addonInterface, { port: PORT });
+  try {
+    // Save all config values
+    await db.run('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)', 
+      'geminiApiKey', geminiApiKey);
+    await db.run('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)',
+      'translateTo', translateTo);
+    await db.run('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)',
+      'cacheTime', JSON.stringify(cacheTime));
+    await db.run('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)',
+      'maxConcurrent', JSON.stringify(maxConcurrent));
+    await db.run('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)',
+      'debugMode', JSON.stringify(debugMode));
 
-    console.log('=========================================================');
-    console.log(`Addon running at: http://127.0.0.1:${PORT}`);
-    if (!hasCredentials) {
-        console.log('No valid credentials found!');
-        console.log('Please visit the configuration page:');
-        console.log(`http://127.0.0.1:${PORT}/config`);
-    }
-    console.log('=========================================================');
-}
+    res.sendStatus(200);
+  } catch (error) {
+    console.error('Error saving credentials:', error);
+    res.status(500).send(error.message);
+  }
+});
 
-// Configuration endpoints
+// Validate key endpoint
 app.post('/validate-key', async (req, res) => {
-    const { geminiApiKey } = req.body;
-    
-    if (!geminiApiKey) {
-        return res.status(400).send('API key is required');
-    }
-
-    try {
-        const isValid = await validateGeminiKey(geminiApiKey);
-        if (isValid) {
-            res.status(200).send('API key is valid');
-        } else {
-            res.status(400).send('Invalid API key');
-        }
-    } catch (error) {
-        console.error('Error validating key:', error);
-        res.status(500).send('Error validating key');
-    }
+  const { geminiApiKey } = req.body;
+  
+  try {
+    await validateGeminiKey(geminiApiKey);
+    res.sendStatus(200);
+  } catch (error) {
+    res.status(400).send(error.message);
+  }
 });
 
-// Serve config page
-app.get('/configure', (req, res) => {
-    res.render('config.html', {
-        version: require('../package.json').version,
-        languages: ['Dutch'], // Add more languages as needed
-    });
+// Serve the addon
+app.get('/:path(*)', (req, res) => {
+  serveHTTP(addonInterface, req, res);
 });
 
-startServer(); 
+app.listen(PORT, () => {
+  console.log(`Addon active on port ${PORT}`);
+}); 
