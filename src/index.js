@@ -64,7 +64,7 @@ app.get('/configure', async (req, res) => {
   const languageService = await LanguageService.getInstance();
   const languages = await languageService.getLanguages();
 
-  res.render('config.html', {
+  res.render('landing.html', {
     version: require('../package.json').version,
     config,
     languages
