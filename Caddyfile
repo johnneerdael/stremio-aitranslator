@@ -2,10 +2,27 @@
     email your-email@domain.com
 }
 
-subtitles.yourdomain.com {
-    reverse_proxy addon:3000
-}
+your-domain.com {
+    root * /app
+    file_server
 
-stremio.yourdomain.com {
-    reverse_proxy addon:7000
+    handle /manifest.json {
+        reverse_proxy addon:7000
+    }
+
+    handle /subtitles/* {
+        reverse_proxy addon:3000
+    }
+
+    handle /config {
+        reverse_proxy addon:3000
+    }
+
+    handle /save-credentials {
+        reverse_proxy addon:3000
+    }
+
+    handle {
+        respond 404
+    }
 } 

@@ -328,8 +328,20 @@
                 
                 if (response.ok) {
                     status.className = 'success';
-                    status.textContent = 'Configuration saved successfully! You can now close this page and use the addon in Stremio.';
+                    status.textContent = 'Configuration saved successfully!';
                     document.getElementById('geminiApiKey').value = '';
+                    
+                    // Add install button
+                    const installBtn = document.createElement('button');
+                    installBtn.textContent = 'Install in Stremio';
+                    installBtn.className = 'install-button';
+                    installBtn.style.marginTop = '1rem';
+                    installBtn.style.background = '#22c55e';
+                    installBtn.onclick = () => {
+                        window.location.href = 'stremio://addon/manifest.json';
+                    };
+                    status.appendChild(document.createElement('br'));
+                    status.appendChild(installBtn);
                 } else {
                     const error = await response.text();
                     status.className = 'error';
