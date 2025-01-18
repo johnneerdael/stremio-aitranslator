@@ -1,5 +1,8 @@
 FROM node:20-alpine AS base
 
+# Install build dependencies
+RUN apk add --no-cache python3 make g++ gcc
+
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
@@ -23,6 +26,9 @@ RUN pnpm build
 # Production stage
 FROM node:20-alpine AS production
 WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache python3 make g++ gcc
 
 # Create necessary directories
 RUN mkdir -p dist/templates static/templates subtitles/dut langs

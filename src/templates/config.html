@@ -150,6 +150,7 @@
             <label for="translateTo">Target Language</label>
             <select id="translateTo">
                 <% languages.forEach(function(lang) { %>
+                    
                     <option value="<%= lang.code %>" 
                             <%= config.translateTo === lang.code ? 'selected' : '' %>>
                         <%= lang.name %>
