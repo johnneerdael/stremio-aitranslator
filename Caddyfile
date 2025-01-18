@@ -1,27 +1,36 @@
 {
     email your-email@domain.com
+    # Cloudflare DNS API token for automatic SSL
+    tls {
+        dns cloudflare 9a283BrVFINKTGY21lwuSylP8Jtsbr8Hukstu5do
+        resolvers 1.1.1.1
+    }
 }
 
-your-domain.com {
-    root * /app
-    file_server
+aitranslator.thepi.es {
+    # Enable compression
+    encode gzip
 
+    # Handle manifest endpoint
     handle /manifest.json {
-        reverse_proxy addon:7000
+        reverse_proxy 192.168.50.67:7000
     }
 
+    # Handle subtitle endpoints
     handle /subtitles/* {
-        reverse_proxy addon:3000
+        reverse_proxy 192.168.50.67:3000
     }
 
+    # Handle configuration endpoints
     handle /config {
-        reverse_proxy addon:3000
+        reverse_proxy 192.168.50.67:3000
     }
 
     handle /save-credentials {
-        reverse_proxy addon:3000
+        reverse_proxy 192.168.50.67:3000
     }
 
+    # Default 404 for unmatched routes
     handle {
         respond 404
     }
