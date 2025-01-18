@@ -154,15 +154,33 @@ module.exports = {
 };
 EOF
 
-# Create src/subtitles.js
-cat > src/subtitles.js << 'EOF'
-async function translateSubtitles(subtitles) {
-    // Implementation will go here
-    return subtitles;
-}
+# Backup current version just in case
+mv src/subtitles.js src/subtitles.js.bak
 
-module.exports = { translateSubtitles };
-EOF
+# Move the complete implementation to src
+mv subtitles.js src/subtitles.js
+
+# Update version
+sed -i 's/"version": ".*"/"version": "1.1.8"/' package.json
+sed -i 's/Version .*/Version 1.1.8/' src/config.html
+
+# Commit changes
+git add src/subtitles.js package.json src/config.html
+git commit -m "feat: add complete subtitles implementation \
+- Add subtitle file management functions
+- Add SRT parsing and formatting
+- Add directory management
+- Bump version to 1.1.8"
+
+# Create new version tag
+git tag -a v1.1.8 -m "Version 1.1.8 - Complete subtitles implementation"
+
+# Push changes
+git push origin main
+git push origin v1.1.8
+
+# Try building again
+DEBUG=stremio:* docker compose up -d --build 
 
 # Create src/processfiles.js
 cat > src/processfiles.js << 'EOF'
@@ -288,6 +306,31 @@ git tag -a v1.1.6 -m "Version 1.1.6 - Fixed module resolution"
 # Push changes
 git push origin main
 git push origin v1.1.6
+
+# Try building again with debug output
+DEBUG=stremio:* docker compose up -d --build 
+
+# Install new dependencies
+pnpm install
+
+# Update version
+sed -i 's/"version": ".*"/"version": "1.1.7"/' package.json
+sed -i 's/Version .*/Version 1.1.7/' src/config.html
+
+# Commit changes
+git add package.json esbuild.config.js src/config.html
+git commit -m "fix: add missing dependencies \
+- Add axios for HTTP requests
+- Add cors and stremio-addon-sdk
+- Update esbuild external config
+- Bump version to 1.1.7"
+
+# Create new version tag
+git tag -a v1.1.7 -m "Version 1.1.7 - Added missing dependencies"
+
+# Push changes
+git push origin main
+git push origin v1.1.7
 
 # Try building again with debug output
 DEBUG=stremio:* docker compose up -d --build 

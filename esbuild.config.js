@@ -15,7 +15,8 @@ esbuild.build({
     'stremio-addon-sdk',
     '@google/generative-ai',
     'better-queue',
-    'debug'
+    'debug',
+    'axios'
   ],
   define: {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production')
