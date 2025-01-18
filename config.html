@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Flash Subtitle Translator - Configuration</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --primary-focus: rgba(99, 102, 241, 0.125);
+            --primary-inverse: #fff;
+            --background-color: #0f172a;
+            --card-background-color: #1e293b;
+            --card-sectionning-background-color: #334155;
+            --card-border-color: #475569;
+            --modal-overlay-background-color: rgba(0, 0, 0, 0.8);
+            --form-element-background-color: #1e293b;
+            --form-element-border-color: #475569;
+            --form-element-color: #f8fafc;
+            --form-element-placeholder-color: #94a3b8;
+            --form-element-active-background-color: #1e293b;
+            --form-element-active-border-color: #6366f1;
+            --form-element-focus-color: #f8fafc;
+            --form-element-disabled-background-color: #475569;
+            --form-element-disabled-border-color: #475569;
+            --form-element-invalid-border-color: #ef4444;
+            --form-element-invalid-active-border-color: #ef4444;
+            --form-element-valid-border-color: #22c55e;
+            --form-element-valid-active-border-color: #22c55e;
+        }
+
+        body {
+            background: var(--background-color);
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, "Segoe UI", "Roboto", "Ubuntu",
+                "Cantarell", "Noto Sans", sans-serif;
+            line-height: 1.5;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .card {
+            background: var(--card-background-color);
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                       0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            border-radius: 1rem;
+            color: white;
+        }
+
+        .logo h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #fff, #e2e8f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo p {
+            margin: 1rem 0 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .steps {
+            list-style: none;
+            counter-reset: step;
+            padding: 0;
+        }
+
+        .steps li {
+            position: relative;
+            margin-bottom: 1.5rem;
+            padding-left: 3rem;
+            counter-increment: step;
+        }
+
+        .steps li::before {
+            content: counter(step);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 2rem;
+            height: 2rem;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .steps a {
+            color: var(--primary);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--primary);
+        }
+
+        .steps a:hover {
+            color: var(--primary-hover);
+            border-bottom-style: solid;
+        }
+
+        form {
+            margin-top: 2rem;
+        }
+
+        input {
+            background: var(--form-element-background-color);
+            border: 1px solid var(--form-element-border-color);
+            border-radius: 0.5rem;
+            color: var(--form-element-color);
+            padding: 0.75rem 1rem;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-focus);
+            outline: none;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button[aria-busy="true"] {
+            position: relative;
+            color: transparent;
+        }
+
+        button[aria-busy="true"]::after {
+            content: "";
+            position: absolute;
+            width: 1.25rem;
+            height: 1.25rem;
+            top: 50%;
+            left: 50%;
+            margin: -0.625rem 0 0 -0.625rem;
+            border: 2px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: button-loading 0.75s linear infinite;
+        }
+
+        @keyframes button-loading {
+            from {
+                transform: rotate(0);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            display: none;
+            animation: fade-in 0.3s ease;
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .logo {
+                padding: 1.5rem;
+            }
+
+            .logo h1 {
+                font-size: 2rem;
+            }
+
+            .steps li {
+                padding-left: 2.5rem;
+            }
+
+            .steps li::before {
+                width: 1.75rem;
+                height: 1.75rem;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo h1 {
+                font-size: 1.75rem;
+            }
+
+            .logo p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <article class="card">
+            <div class="logo">
+                <h1>Gemini Flash Subtitle Translator</h1>
+                <p>Instant subtitle translation powered by Google's Gemini AI</p>
+            </div>
+
+            <section>
+                <h2>Setup Instructions</h2>
+                <ol class="steps">
+                    <li>Get your Gemini API key from <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a></li>
+                    <li>Enter your API key in the form below</li>
+                    <li>Install the addon in Stremio using the provided URL</li>
+                    <li>Start watching content with auto-translated subtitles!</li>
+                </ol>
+            </section>
+
+            <section>
+                <h2>Configuration</h2>
+                <form id="configForm" action="/save-credentials" method="POST">
+                    <div class="grid">
+                        <label for="geminiApiKey">
+                            Gemini API Key
+                            <input 
+                                type="password" 
+                                id="geminiApiKey" 
+                                name="geminiApiKey" 
+                                placeholder="Enter your Gemini API key"
+                                required
+                                autocomplete="off"
+                                spellcheck="false"
+                            >
+                        </label>
+                    </div>
+                    <button type="submit" id="submitBtn">Save Configuration</button>
+                </form>
+                <div id="status"></div>
+            </section>
+        </article>
+    </main>
+
+    <script>
+        document.getElementById('configForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+            const status = document.getElementById('status');
+            const apiKey = document.getElementById('geminiApiKey').value;
+
+            submitBtn.setAttribute('aria-busy', 'true');
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/save-credentials', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ geminiApiKey: apiKey }),
+                });
+
+                status.style.display = 'block';
+                
+                if (response.ok) {
+                    status.className = 'success';
+                    status.textContent = 'Configuration saved successfully! You can now close this page and use the addon in Stremio.';
+                    document.getElementById('geminiApiKey').value = '';
+                } else {
+                    const error = await response.text();
+                    status.className = 'error';
+                    status.textContent = error || 'Failed to save configuration. Please try again.';
+                }
+            } catch (error) {
+                status.style.display = 'block';
+                status.className = 'error';
+                status.textContent = 'Network error. Please check your connection and try again.';
+            } finally {
+                submitBtn.removeAttribute('aria-busy');
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html> 

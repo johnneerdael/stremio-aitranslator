@@ -1,0 +1,11 @@
+{
+    email your-email@domain.com
+}
+
+subtitles.yourdomain.com {
+    reverse_proxy addon:3000
+}
+
+stremio.yourdomain.com {
+    reverse_proxy addon:7000
+} 

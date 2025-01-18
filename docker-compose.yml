@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  addon:
+    build: .
+    container_name: gemini-flash-addon
+    restart: unless-stopped
+    volumes:
+      - ./subtitles:/app/subtitles
+      - ./credentials.json:/app/credentials.json
+    networks:
+      - caddy_net
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: gemini-flash-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - caddy_net
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  caddy_net:
+    name: caddy_network 
