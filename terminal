@@ -51,44 +51,45 @@ pnpm init
 # Add dependencies
 pnpm add express @google/generative-ai
 
-# Create Dockerfile
-cat > Dockerfile << 'EOF'
-FROM node:20-alpine
+# Add development dependencies
+pnpm add -D typescript @types/node @types/express
 
-# Install system utilities
-RUN apk add --no-cache \
-    bash \
-    curl \
-    htop \
-    nano \
-    procps \
-    tcpdump \
-    vim
-
-# Set working directory
-WORKDIR /app
-
-# Install pnpm using npm
-RUN npm install -g pnpm
-
-# Copy package files
-COPY package.json ./
-COPY pnpm-lock.yaml ./
-
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
-# Copy source code
-COPY . .
-
-# Expose port
-EXPOSE 7000
-
-# Start the application
-CMD ["pnpm", "start"]
+# Create tsconfig.json
+cat > tsconfig.json << 'EOF'
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}
 EOF
 
-# Try building again
+# Add build and start scripts to package.json
+cat > package.json << 'EOF'
+{
+  "name": "stremio-aitranslator",
+  "version": "1.1.1",
+  "description": "Stremio addon for real-time subtitle translation using Google's Gemini AI",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc -w"
+  },
+  "author": "",
+  "license": "MIT"
+}
+EOF
+
+# Now try building Docker image again
 docker compose up -d --build 
 
 # Add all changed files
@@ -102,8 +103,28 @@ git commit -m "feat: optimize Docker build with multi-stage setup \
 - Fix compose file references"
 
 # Create new version tag
-git tag -a v1.1.0 -m "Version 1.1.0 - Optimized Docker build and improved documentation"
+git tag -a v1.1.1 -m "Version 1.1.1 - Optimized Docker build and improved documentation"
 
 # Push changes and tag
 git push origin main
-git push origin v1.1.0 
+git push origin v1.1.1 
+
+# Update version in package.json and src/config.html
+sed -i 's/"version": "1.1.1"/"version": "1.1.1"/' package.json
+sed -i 's/Version 1.1.1/Version 1.1.1/' src/config.html
+
+# Add all changed files
+git add package.json src/config.html Dockerfile
+
+# Commit changes
+git commit -m "fix: remove pnpm-lock.yaml dependency from Dockerfile \
+- Allow pnpm to generate lock file during build
+- Fix Docker build errors
+- Bump version to 1.1.1"
+
+# Create new version tag
+git tag -a v1.1.1 -m "Version 1.1.1 - Fix Docker build process"
+
+# Push changes and tag
+git push origin main
+git push origin v1.1.1 
