@@ -6,17 +6,17 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json ./
 
 # Development stage
 FROM base as development
-RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install
 COPY . .
 CMD ["pnpm", "dev"]
 
 # Build stage
 FROM base as build
-RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install
 COPY . .
 RUN pnpm build
 
@@ -30,18 +30,14 @@ RUN mkdir -p dist/templates static/templates subtitles/dut langs
 # Copy built files and dependencies
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./
-COPY --from=build /app/pnpm-lock.yaml ./
 
 # Copy templates
 COPY --from=build /app/src/templates ./dist/templates
 COPY --from=build /app/src/templates ./static/templates
 
-# Copy static assets
-COPY --from=build /app/src/assets/wallpaper.png ./static/wallpaper.png
-
 # Install production dependencies only
 RUN corepack enable && corepack prepare pnpm@latest --activate && \
-    pnpm install --prod --frozen-lockfile
+    pnpm install --prod
 
 # Create data directory for credentials
 RUN mkdir -p data
