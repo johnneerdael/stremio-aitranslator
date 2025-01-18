@@ -2,56 +2,12 @@ mkdir -p src
 mv config.html src/config.html
 git rm static/config.html
 git add src/config.html
-git commit -m "refactor: move config.html to src directory for better project structure"
+git commit -m "refactor: move config.html to src directory"
+git tag -a v1.1.0 -m "Version 1.1.0 - Initial project structure"
 
-# Create a new tag for the release
-git tag -a v1.0.0 -m "Version 1.0.0 - Initial release with improved config page"
-
-# Push changes and tags
-git push origin main
-git push origin v1.0.0 
-
-# Rename files
-mv docker-compose.yml compose.yml
-mv docker-compose.full.yml compose-full.yml
-
-# Add these changes to git
-git add compose.yml compose-full.yml
-git rm docker-compose.yml docker-compose.full.yml
-git add README.md PRODUCTION.md
-
-# Commit changes
-git commit -m "refactor: rename and improve docker compose files"
-
-# Update version tag
-git tag -a v1.0.1 -m "Version 1.0.1 - Improved Docker configuration"
-git push origin main
-git push origin v1.0.1 
-
-# Add all changed files
-git add src/config.html
-git rm static/config.html
-git add compose.yml compose-full.yml
-git add README.md PRODUCTION.md
-
-# Commit the changes
-git commit -m "refactor: improve configuration page with advanced settings and better UX \
-- Move config.html to src directory
-- Add connection status indicator
-- Add advanced settings panel
-- Improve UI/UX with better feedback
-- Update documentation and compose files"
-
-# Push changes
-git push origin main 
-
-# Initialize project with pnpm
+# 2. Setup Node.js project
 pnpm init
-
-# Add dependencies
 pnpm add express @google/generative-ai
-
-# Add development dependencies
 pnpm add -D typescript @types/node @types/express
 
 # Create tsconfig.json
@@ -72,59 +28,95 @@ cat > tsconfig.json << 'EOF'
 }
 EOF
 
-# Add build and start scripts to package.json
-cat > package.json << 'EOF'
-{
-  "name": "stremio-aitranslator",
-  "version": "1.1.1",
-  "description": "Stremio addon for real-time subtitle translation using Google's Gemini AI",
-  "main": "dist/index.js",
-  "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "tsc -w"
-  },
-  "author": "",
-  "license": "MIT"
+# Update package.json version
+sed -i 's/"version": ".*"/"version": "1.1.1"/' package.json
+git add package.json tsconfig.json
+git commit -m "feat: initialize Node.js project with TypeScript"
+
+# 3. Add source files
+cat > src/opensubtitles.js << 'EOF'
+function getSubtitles() {
+    // Implementation will go here
+    return Promise.resolve([]);
 }
+
+module.exports = {
+    getSubtitles
+};
 EOF
 
-# Now try building Docker image again
+git add src/opensubtitles.js
+git commit -m "feat: add initial source files"
+
+# 4. Update Docker configuration
+cat > Dockerfile << 'EOF'
+# Build stage
+FROM node:20-alpine AS builder
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json ./
+
+# Install dependencies
+RUN pnpm install
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN pnpm build
+
+# Production stage
+FROM node:20-alpine AS production
+
+# Install system utilities
+RUN apk add --no-cache \
+    bash \
+    curl \
+    htop \
+    nano \
+    procps \
+    tcpdump \
+    vim
+
+# Set working directory
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy package files and install production dependencies
+COPY package.json ./
+RUN pnpm install --prod
+
+# Copy built files from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/static ./static
+
+# Expose port
+EXPOSE 7000
+
+# Start the application
+CMD ["node", "dist/index.js"]
+EOF
+
+# Update version and commit Docker changes
+sed -i 's/"version": ".*"/"version": "1.1.2"/' package.json
+sed -i 's/Version .*/Version 1.1.2/' src/config.html
+git add Dockerfile package.json src/config.html
+git commit -m "feat: add multi-stage Docker build"
+git tag -a v1.1.2 -m "Version 1.1.2 - Production-ready Docker setup"
+
+# Push all changes
+git push origin main
+git push origin v1.1.0
+git push origin v1.1.1
+git push origin v1.1.2
+
+# Try building
 docker compose up -d --build 
-
-# Add all changed files
-git add README.md Dockerfile compose.yml compose-full.yml
-
-# Commit changes
-git commit -m "feat: optimize Docker build with multi-stage setup \
-- Add multi-stage Docker build for smaller production image
-- Remove host dependency on Node.js/pnpm
-- Update documentation with clearer instructions
-- Fix compose file references"
-
-# Create new version tag
-git tag -a v1.1.1 -m "Version 1.1.1 - Optimized Docker build and improved documentation"
-
-# Push changes and tag
-git push origin main
-git push origin v1.1.1 
-
-# Update version in package.json and src/config.html
-sed -i 's/"version": "1.1.1"/"version": "1.1.1"/' package.json
-sed -i 's/Version 1.1.1/Version 1.1.1/' src/config.html
-
-# Add all changed files
-git add package.json src/config.html Dockerfile
-
-# Commit changes
-git commit -m "fix: remove pnpm-lock.yaml dependency from Dockerfile \
-- Allow pnpm to generate lock file during build
-- Fix Docker build errors
-- Bump version to 1.1.1"
-
-# Create new version tag
-git tag -a v1.1.1 -m "Version 1.1.1 - Fix Docker build process"
-
-# Push changes and tag
-git push origin main
-git push origin v1.1.1 
