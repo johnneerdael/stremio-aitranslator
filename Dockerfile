@@ -1,4 +1,4 @@
-FROM node:20-alpine as base
+FROM node:20-alpine AS base
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -9,19 +9,19 @@ WORKDIR /app
 COPY package.json ./
 
 # Development stage
-FROM base as development
+FROM base AS development
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install
 COPY . .
 CMD ["pnpm", "dev"]
 
 # Build stage
-FROM base as build
+FROM base AS build
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install
 COPY . .
 RUN pnpm build
 
 # Production stage
-FROM node:20-alpine as production
+FROM node:20-alpine AS production
 WORKDIR /app
 
 # Create necessary directories
