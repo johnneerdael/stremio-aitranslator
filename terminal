@@ -242,3 +242,28 @@ git push origin v1.1.4
 
 # Try building again
 docker compose up -d --build 
+
+# Update dependencies
+pnpm install
+
+# Update version
+sed -i 's/"version": ".*"/"version": "1.1.5"/' package.json
+sed -i 's/Version .*/Version 1.1.5/' src/config.html
+
+# Commit changes
+git add package.json esbuild.config.js src/index.js src/config.html
+git commit -m "feat: add build debugging and switch to esbuild \
+- Add debug statements for better error tracking
+- Replace TypeScript with esbuild for simpler builds
+- Add proper external dependencies
+- Bump version to 1.1.5"
+
+# Create new version tag
+git tag -a v1.1.5 -m "Version 1.1.5 - Improved build system with debugging"
+
+# Push changes
+git push origin main
+git push origin v1.1.5
+
+# Try building again with debug output
+DEBUG=stremio:* docker compose up -d --build 

@@ -5,14 +5,13 @@ const { addonInterface } = require('./addon');
 const { validateGeminiKey, initializeGemini } = require('./translateProvider');
 const fs = require('fs').promises;
 const path = require('path');
-const debug = require('debug');
+const debug = require('debug')('stremio:server');
 
 const app = express();
 const PORT = process.env.PORT || 11470;
 const STATIC_PATH = path.join(process.cwd(), 'static');
 
-// Enable debugging
-debug.enabled = true;
+debug('Initializing server...');
 
 // Middleware
 app.use(cors());
