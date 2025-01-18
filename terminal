@@ -1,0 +1,12 @@
+mkdir -p src
+mv config.html src/config.html
+git rm static/config.html
+git add src/config.html
+git commit -m "refactor: move config.html to src directory for better project structure"
+
+# Create a new tag for the release
+git tag -a v1.0.0 -m "Version 1.0.0 - Initial release with improved config page"
+
+# Push changes and tags
+git push origin main
+git push origin v1.0.0 

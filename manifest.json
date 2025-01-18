@@ -36,7 +36,7 @@
         "options": ["Dutch"]
       }
     ],
-    "description": "This addon takes subtitles from OpenSubtitlesV3 then translates into desired language using Gemini Flash 1.5 Free Tier. For donations:in progress Bug report: geanpn@gmail.com",
+    "description": "This addon takes subtitles from OpenSubtitlesV3 then translates into desired language using Gemini Flash 1.5 Free Tier.",
     "types": ["series", "movie"],
     "catalogs": [],
     "resources": ["subtitles"]

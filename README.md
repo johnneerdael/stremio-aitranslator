@@ -1,191 +1,241 @@
-# Gemini Flash Subtitle Translator for Stremio
+# Stremio AI Translator Addon
 
-A Stremio addon that automatically translates English subtitles to Dutch using Google's Gemini AI. This addon provides real-time subtitle translation with optimized performance and rate limiting.
+An advanced Stremio addon that uses Google's Gemini Pro to translate subtitles in real-time. Supports mid-show starts and provides instant feedback while translating.
 
 ## Features
 
-- 🚀 Real-time subtitle translation
-- 🎯 Optimized for Gemini's free tier limits
-- 🔄 Smart caching of translated subtitles
-- 🎨 Beautiful configuration interface
-- 🔒 Secure API key management
-- 📱 Responsive design
-- 🌐 Automatic SSL with Caddy
+- Real-time subtitle translation using Google Gemini Flash 1.5 Free Tier
+- Smart translation prioritization for mid-show starts
+- Progress tracking and instant feedback
+- Efficient caching system
+- Support for all Stremio-compatible subtitle formats
+- Modern configuration interface
+- Extensive debugging capabilities
 
-## Self-Hosting Guide
-
-### Prerequisites
+## Prerequisites
 
 - Docker and Docker Compose
-- A domain name pointing to your server
-- Basic knowledge of terminal/command line
-- Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+- Google Gemini API key (get it from [Google AI Studio](https://makersuite.google.com/app/apikey))
+- Node.js 20+ (for local development only)
 
-### Installation
+## Quick Start
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/johnneerdael/stremio-aitranslator.git
-   cd stremio-aitranslator
-   ```
+```bash
+git clone https://github.com/yourusername/stremio-aitranslator.git
+cd stremio-aitranslator
+```
 
-2. Create necessary directories and files:
-   ```bash
-   mkdir -p subtitles/dut
-   touch credentials.json
-   ```
+2. Create environment file:
+```bash
+cp .env.example .env
+# Edit .env and add your GEMINI_API_KEY
+```
 
-3. Edit the Caddyfile:
-   ```bash
-   nano Caddyfile
-   ```
-   Replace with your domain and email:
-   ```
+3. Choose your deployment method:
+
+### Option 1: All-in-One Docker Setup (with Caddy)
+
+This option runs both the addon and Caddy reverse proxy in Docker containers:
+
+1. Edit `docker-compose.full.yml`:
+```bash
+# Replace yourdomain.com with your actual domain
+# Update email address for SSL certificates
+```
+
+2. Start the services:
+```bash
+docker-compose -f docker-compose.full.yml up -d
+```
+
+### Option 2: Addon Only (External Caddy)
+
+If you're running Caddy on another server:
+
+1. Start the addon:
+```bash
+docker-compose up -d aitranslator
+```
+
+2. On your Caddy server, add this to your Caddyfile:
+```caddy
+yourdomain.com {
+    reverse_proxy your-addon-server:11470 {
+        health_uri /health
+        health_interval 30s
+    }
+}
+```
+
+## Development Setup
+
+1. Install dependencies:
+```bash
+pnpm install
+```
+
+2. Start development environment:
+```bash
+docker-compose up dev
+```
+
+The development environment includes:
+- Hot reloading
+- Debug endpoints
+- Chrome DevTools debugging (chrome://inspect)
+- Extended logging
+
+## Configuration
+
+### Addon Configuration
+
+Visit `http://yourdomain.com/config` to:
+- Set your Gemini API key
+- Configure translation settings
+- Test the connection
+
+### Environment Variables
+
+- `GEMINI_API_KEY`: Your Google Gemini API key
+- `NODE_ENV`: 'development' or 'production'
+- `DEBUG`: Debug namespaces (e.g., 'stremio:*')
+- `PORT`: Server port (default: 11470)
+
+## Debugging
+
+### Debug Endpoints (Development)
+
+- `/debug/vars`: Runtime variables and memory usage
+- `/debug/config`: Current configuration
+- `/health`: Health check endpoint
+
+### Logs
+
+```bash
+# Container logs
+docker-compose logs -f aitranslator
+
+# Application logs
+tail -f logs/app.log
+
+# Caddy logs
+tail -f /var/log/caddy/aitranslator.log
+```
+
+### Node.js Debugging
+
+1. Connect to Chrome DevTools:
+   - Open chrome://inspect
+   - Add your server: `localhost:9229` or `your-server-ip:9229`
+
+2. Use VS Code debugging:
+   ```json
    {
-       email your-email@domain.com
-   }
-
-   your-domain.com {
-       root * /app
-       file_server
-
-       handle /manifest.json {
-           reverse_proxy addon:7000
-       }
-
-       handle /subtitles/* {
-           reverse_proxy addon:3000
-       }
-
-       handle /config {
-           reverse_proxy addon:3000
-       }
-
-       handle /save-credentials {
-           reverse_proxy addon:3000
-       }
+     "type": "node",
+     "request": "attach",
+     "name": "Attach to Docker",
+     "port": 9229,
+     "restart": true
    }
    ```
 
-4. Start the services:
-   ```bash
-   docker-compose up -d
-   ```
+## Monitoring
 
-5. Visit your configuration page:
-   ```
-   https://your-domain.com/config
-   ```
+```bash
+# Container stats
+docker stats stremio-aitranslator
 
-### Configuration
+# Process monitoring
+docker exec -it stremio-aitranslator htop
 
-1. Get your Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Visit your addon's configuration page
-3. Enter your API key
-4. Click the "Install in Stremio" button that appears after successful configuration
-
-### Usage
-
-The addon will be available in Stremio at:
-```
-https://your-domain.com/manifest.json
+# Network debugging
+docker exec -it stremio-aitranslator tcpdump -i any port 11470
 ```
 
-### Directory Structure
-
-```
-addon-gemini-flash/
-├── index.js              # Main addon code
-├── config.html           # Configuration page
-├── Dockerfile           # Docker configuration
-├── docker-compose.yml   # Docker Compose configuration
-├── Caddyfile           # Caddy reverse proxy configuration
-├── subtitles/          # Directory for cached subtitles
-│   └── dut/           # Dutch translations
-└── credentials.json    # Stored API credentials
-```
-
-### Rate Limits
-
-The addon is optimized for Gemini's free tier limits:
-- 15 RPM (requests per minute)
-- 1M TPM (tokens per minute)
-- 1,500 RPD (requests per day)
-
-Translation strategy:
-1. First 25 subtitles translated immediately (5 chunks of 5)
-2. Next 100 subtitles translated quickly (5 chunks of 20)
-3. Remaining subtitles translated with optimized delays
-
-### Maintenance
-
-- View logs:
-  ```bash
-  docker-compose logs -f
-  ```
-
-- Update the addon:
-  ```bash
-  docker-compose pull
-  docker-compose up -d
-  ```
-
-- Restart services:
-  ```bash
-  docker-compose restart
-  ```
-
-- Stop services:
-  ```bash
-  docker-compose down
-  ```
-
-### Troubleshooting
-
-1. Check the logs for errors:
-   ```bash
-   docker-compose logs -f
-   ```
-
-2. Verify permissions:
-   ```bash
-   sudo chown -R 1000:1000 subtitles/
-   sudo chmod -R 755 subtitles/
-   ```
-
-3. Reset configuration:
-   ```bash
-   echo '{}' > credentials.json
-   ```
-
-4. Verify Caddy configuration:
-   ```bash
-   docker-compose exec caddy caddy validate
-   ```
+## Production Deployment
 
 ### Security Considerations
 
-- Always use HTTPS (automatically handled by Caddy)
-- Keep your API key secure
-- Regularly update Docker images
-- Monitor logs for unusual activity
-- Use strong file permissions
+1. SSL/TLS:
+   - Automatic HTTPS with Caddy
+   - Modern TLS configuration
+   - HSTS enabled
+
+2. Headers:
+   - XSS protection
+   - CSRF prevention
+   - Content type sniffing protection
+   - Frame protection
+
+3. Rate Limiting:
+   - Built-in Caddy rate limiting
+   - Gemini API quota management
+
+### Updating
+
+```bash
+# Pull latest changes
+git pull
+
+# Rebuild and restart
+docker-compose up -d --build aitranslator
+```
+
+### Backup
+
+Important directories to backup:
+- `./subtitles/`: Translated subtitle cache
+- `./logs/`: Application logs
+- `./credentials.json`: API key storage
+
+## Troubleshooting
+
+### Common Issues
+
+1. "No valid credentials":
+   - Visit the configuration page
+   - Check Gemini API key validity
+
+2. "Translation timeout":
+   - Check network connectivity
+   - Verify Gemini API quota
+
+3. "Cannot connect to debug port":
+   - Ensure port 9229 is accessible
+   - Check firewall rules
+
+### Health Checks
+
+The addon includes automatic health checks:
+- HTTP endpoint checks
+- Process monitoring
+- Resource usage alerts
+
+## API Rate Limits
+
+Google Gemini Pro limits:
+- 15 requests per minute
+- 1 million tokens per minute
+- 1,500 requests per day
+
+The addon automatically manages these limits by:
+- Token-based batch sizing
+- Request rate monitoring
+- Efficient caching
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Fork the repository
+2. Create your feature branch
+3. Run tests: `pnpm test`
+4. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- Google's Gemini AI for translation
-- Stremio team for the addon SDK
-- Caddy for reverse proxy
-- The open-source community
+MIT License - see LICENSE file
 
 ## Support
 
-If you encounter any issues or need help, please open an issue on GitHub. 
+- GitHub Issues: [Report a bug](https://github.com/yourusername/stremio-aitranslator/issues)
+- Email: your.email@domain.com 

@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  aitranslator:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: stremio-aitranslator
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DEBUG=stremio:*
+      - DEBUG_COLORS=true
+      - DEBUG_DEPTH=10
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./subtitles:/app/subtitles
+      - ./logs:/app/logs
+      - ./credentials.json:/app/credentials.json
+    expose:
+      - "11470"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11470/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - addon_network
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: stremio-aitranslator-caddy
+    restart: unless-stopped
+    environment:
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - ACME_AGREE=true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+      - ./logs/caddy:/var/log/caddy
+    depends_on:
+      - aitranslator
+    networks:
+      - addon_network
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  addon_network:
+    driver: bridge 
