@@ -245,6 +245,102 @@
                 transform: rotate(360deg);
             }
         }
+
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .toggle-password:hover {
+            color: var(--primary);
+            transform: none;
+        }
+        
+        .eye-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+        
+        .help-text {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .status-banner {
+            margin: 1rem 0;
+            padding: 1rem;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-banner.connected {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .status-banner.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .version {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        .text-button {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            margin: 1rem 0;
+            width: auto;
+        }
+
+        .text-button:hover {
+            color: var(--primary-hover);
+            transform: none;
+        }
+
+        .select-input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        .footer {
+            margin-top: 2rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
@@ -252,7 +348,8 @@
         <article class="card">
             <div class="logo">
                 <h1>Gemini Flash</h1>
-                <p>Real-time subtitle translation powered by Google's Gemini AI</p>
+                <p>Real-time subtitle translation powered by Google's Gemini Pro</p>
+                <p class="version">Version 1.0.1</p>
             </div>
 
             <section>
@@ -268,37 +365,88 @@
                     </li>
                     <li>
                         <div class="step-number">3</div>
-                        <div>Click the Install button that appears after saving</div>
+                        <div>Click Save Configuration</div>
                     </li>
                     <li>
                         <div class="step-number">4</div>
-                        <div>Start watching with auto-translated subtitles!</div>
+                        <div>Install the addon in Stremio using the button that appears</div>
                     </li>
                 </ol>
             </section>
+
+            <div id="connectionStatus" class="status-banner" style="display: none;">
+                <div class="status-icon"></div>
+                <span class="status-text"></span>
+            </div>
 
             <section>
                 <form id="configForm" action="/save-credentials" method="POST">
                     <div class="form-group">
                         <label for="geminiApiKey">Gemini API Key</label>
-                        <input 
-                            type="password" 
-                            id="geminiApiKey" 
-                            name="geminiApiKey" 
-                            placeholder="Enter your API key"
-                            required
-                            autocomplete="off"
-                            spellcheck="false"
-                        >
+                        <div class="input-group">
+                            <input 
+                                type="password" 
+                                id="geminiApiKey" 
+                                name="geminiApiKey" 
+                                placeholder="Enter your API key"
+                                required
+                                autocomplete="off"
+                                spellcheck="false"
+                            >
+                            <button 
+                                type="button" 
+                                id="togglePassword" 
+                                class="toggle-password"
+                                aria-label="Toggle password visibility"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </div>
+                        <small class="help-text">Your API key will be securely stored on the server</small>
                     </div>
+
+                    <div id="advancedSettings" class="advanced-settings" style="display: none;">
+                        <div class="form-group">
+                            <label for="targetLang">Default Target Language</label>
+                            <select id="targetLang" name="targetLang" class="select-input">
+                                <option value="en">English</option>
+                                <option value="es">Spanish</option>
+                                <option value="fr">French</option>
+                                <option value="de">German</option>
+                                <!-- Add more languages as needed -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="button" id="toggleAdvanced" class="text-button">
+                        Show Advanced Settings
+                    </button>
+
                     <button type="submit" id="submitBtn">Save Configuration</button>
                 </form>
                 <div id="status"></div>
             </section>
+
+            <footer class="footer">
+                <p>Need help? Check out our <a href="https://github.com/yourusername/stremio-aitranslator" target="_blank">documentation</a></p>
+            </footer>
         </article>
     </main>
 
     <script>
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const input = document.getElementById('geminiApiKey');
+            const type = input.type === 'password' ? 'text' : 'password';
+            input.type = type;
+            
+            // Update icon (you can add CSS to handle this)
+            this.classList.toggle('showing');
+        });
+
         document.getElementById('configForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
@@ -329,7 +477,7 @@
                     installBtn.textContent = 'Install in Stremio';
                     installBtn.className = 'install-button';
                     installBtn.onclick = () => {
-                        window.location.href = 'stremio://addon/https://aitranslator.thepi.es/manifest.json';
+                        window.location.href = 'stremio://addon/https://aitranslator.yourdomain.com/manifest.json';
                     };
                     status.appendChild(document.createElement('br'));
                     status.appendChild(installBtn);
@@ -347,6 +495,36 @@
                 submitBtn.disabled = false;
             }
         });
+
+        // Toggle advanced settings
+        document.getElementById('toggleAdvanced').addEventListener('click', function() {
+            const advancedSettings = document.getElementById('advancedSettings');
+            const isHidden = advancedSettings.style.display === 'none';
+            advancedSettings.style.display = isHidden ? 'block' : 'none';
+            this.textContent = isHidden ? 'Hide Advanced Settings' : 'Show Advanced Settings';
+        });
+
+        // Check connection status on load
+        async function checkConnection() {
+            const statusBanner = document.getElementById('connectionStatus');
+            try {
+                const response = await fetch('/health');
+                if (response.ok) {
+                    statusBanner.className = 'status-banner connected';
+                    statusBanner.querySelector('.status-text').textContent = 'Connected and ready';
+                } else {
+                    throw new Error('Service unavailable');
+                }
+            } catch (error) {
+                statusBanner.className = 'status-banner error';
+                statusBanner.querySelector('.status-text').textContent = 'Connection error';
+            }
+            statusBanner.style.display = 'flex';
+        }
+
+        // Check connection status periodically
+        checkConnection();
+        setInterval(checkConnection, 30000);
     </script>
 </body>
 </html> 

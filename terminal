@@ -10,3 +10,37 @@ git tag -a v1.0.0 -m "Version 1.0.0 - Initial release with improved config page"
 # Push changes and tags
 git push origin main
 git push origin v1.0.0 
+
+# Rename files
+mv docker-compose.yml compose.yml
+mv docker-compose.full.yml compose-full.yml
+
+# Add these changes to git
+git add compose.yml compose-full.yml
+git rm docker-compose.yml docker-compose.full.yml
+git add README.md PRODUCTION.md
+
+# Commit changes
+git commit -m "refactor: rename and improve docker compose files"
+
+# Update version tag
+git tag -a v1.0.1 -m "Version 1.0.1 - Improved Docker configuration"
+git push origin main
+git push origin v1.0.1 
+
+# Add all changed files
+git add src/config.html
+git rm static/config.html
+git add compose.yml compose-full.yml
+git add README.md PRODUCTION.md
+
+# Commit the changes
+git commit -m "refactor: improve configuration page with advanced settings and better UX
+- Move config.html to src directory
+- Add connection status indicator
+- Add advanced settings panel
+- Improve UI/UX with better feedback
+- Update documentation and compose files"
+
+# Push changes
+git push origin main 

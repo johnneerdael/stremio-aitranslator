@@ -1,0 +1,28 @@
+services:
+  aitranslator:
+    build: .
+    restart: unless-stopped
+    expose:
+      - "7000"
+    volumes:
+      - ./data:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.aitranslator.rule=Host(`aitranslator.yourdomain.com`)"
+      - "traefik.http.routers.aitranslator.tls=true"
+      - "traefik.http.routers.aitranslator.tls.certresolver=letsencrypt"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config: 

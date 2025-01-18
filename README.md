@@ -26,13 +26,7 @@ git clone https://github.com/yourusername/stremio-aitranslator.git
 cd stremio-aitranslator
 ```
 
-2. Create environment file:
-```bash
-cp .env.example .env
-# Edit .env and add your GEMINI_API_KEY
-```
-
-3. Choose your deployment method:
+2. Choose your deployment method:
 
 ### Option 1: All-in-One Docker Setup (with Caddy)
 
@@ -46,7 +40,7 @@ This option runs both the addon and Caddy reverse proxy in Docker containers:
 
 2. Start the services:
 ```bash
-docker-compose -f docker-compose.full.yml up -d
+docker compose -f docker-compose.full.yml up -d
 ```
 
 ### Option 2: Addon Only (External Caddy)
@@ -55,7 +49,7 @@ If you're running Caddy on another server:
 
 1. Start the addon:
 ```bash
-docker-compose up -d aitranslator
+docker compose up -d aitranslator
 ```
 
 2. On your Caddy server, add this to your Caddyfile:
@@ -77,7 +71,7 @@ pnpm install
 
 2. Start development environment:
 ```bash
-docker-compose up dev
+docker compose up dev
 ```
 
 The development environment includes:
@@ -97,10 +91,10 @@ Visit `http://yourdomain.com/config` to:
 
 ### Environment Variables
 
-- `GEMINI_API_KEY`: Your Google Gemini API key
 - `NODE_ENV`: 'development' or 'production'
 - `DEBUG`: Debug namespaces (e.g., 'stremio:*')
 - `PORT`: Server port (default: 11470)
+- `GEMINI_API_KEY`: Your Google Gemini API key
 
 ## Debugging
 
@@ -114,7 +108,7 @@ Visit `http://yourdomain.com/config` to:
 
 ```bash
 # Container logs
-docker-compose logs -f aitranslator
+docker compose logs -f aitranslator
 
 # Application logs
 tail -f logs/app.log
@@ -179,7 +173,7 @@ docker exec -it stremio-aitranslator tcpdump -i any port 11470
 git pull
 
 # Rebuild and restart
-docker-compose up -d --build aitranslator
+docker compose up -d --build aitranslator
 ```
 
 ### Backup

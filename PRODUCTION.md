@@ -31,14 +31,10 @@ touch credentials.json
 
 2. **Configure Environment**:
 ```bash
-# Copy and edit environment file
-cp .env.example .env
-
-# Edit .env with your settings
+# Configure domain and email if needed
 nano .env
 
 # Required variables:
-# - GEMINI_API_KEY=your_api_key
 # - DOMAIN=your-domain.com
 # - EMAIL=your-email@domain.com
 ```
@@ -46,7 +42,7 @@ nano .env
 3. **Start Services**:
 ```bash
 # Build and start containers
-docker-compose -f docker-compose.full.yml up -d
+docker compose -f compose-full.yml up -d
 
 # Check logs
 docker-compose -f docker-compose.full.yml logs -f
