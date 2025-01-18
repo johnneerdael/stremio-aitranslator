@@ -1,17 +1,28 @@
 {
-  "name": "addon-gemini-flash",
+  "name": "stremio-aitranslator",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "node esbuild.js",
+    "dev": "node --watch src/index.js",
+    "start": "node dist/index.js",
+    "lint": "eslint . --ext .js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@google/generative-ai": "^0.21.0",
-    "axios": "^1.7.9",
+    "@google/generative-ai": "^0.1.3",
+    "axios": "^1.6.5",
+    "better-queue": "^3.8.12",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
     "stremio-addon-sdk": "^1.6.10"
+  },
+  "devDependencies": {
+    "esbuild": "^0.19.12",
+    "esbuild-plugin-copy": "^2.1.1",
+    "eslint": "^8.56.0"
   }
 }

@@ -1,37 +1,55 @@
 version: '3.8'
 
 services:
-  addon:
-    build: .
+  aitranslator:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: stremio-aitranslator
     restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DEBUG=stremio:*
+      - DEBUG_COLORS=true
+      - DEBUG_DEPTH=10
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     volumes:
-      - ./credentials.json:/app/credentials.json
       - ./subtitles:/app/subtitles
+      - ./logs:/app/logs
+      - ./credentials.json:/app/credentials.json
     ports:
-      - "3000:3000"
-      - "7000:7000"
-    networks:
-      - addon-network
+      - "11470:11470"  # Stremio addon port
+      - "9229:9229"    # Node.js debugging port
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11470/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
+  # Development service with additional debugging tools
+  dev:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: stremio-aitranslator-dev
+    restart: "no"
+    environment:
+      - NODE_ENV=development
+      - DEBUG=stremio:*,app:*
+      - DEBUG_COLORS=true
+      - DEBUG_DEPTH=10
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
-    networks:
-      - addon-network
-    depends_on:
-      - addon
-
-volumes:
-  caddy_data:
-  caddy_config:
-
-networks:
-  addon-network:
-    driver: bridge 
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "11470:11470"
+      - "9229:9229"
+    command: pnpm run dev
+    healthcheck:
+      disable: true 

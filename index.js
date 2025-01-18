@@ -35,17 +35,50 @@ async function validateGeminiKey(apiKey) {
     }
 }
 
-const manifest = {
-    "id": "org.gemini.flash",
-    "version": "1.0.0",
-    "name": "Gemini Flash Subtitle Translator",
-    "description": "Translates English subtitles to Dutch using Gemini Flash 1.5",
-    "resources": ["subtitles"],
-    "types": ["movie", "series"],
-    "catalogs": [],
-};
-
-const builder = new addonBuilder(manifest);
+const builder = new addonBuilder({
+    id: "stremio-aitranslator",
+    version: "1.0.2",
+    name: "Auto Subtitle Translate from English to Dutch",
+    logo: "./subtitles/logo.png",
+    configurable: true,
+    behaviorHints: {
+      configurable: true,
+      configurationRequired: true,
+    },
+    config: [
+      {
+          key: "provider",
+          title: "Provider",
+          type: "select",
+          required: true,
+          options: ["gemini-flash-1.5"],
+      },
+      {
+          key: "apikey",
+          title: "API Key",
+          type: "text",
+          required: true,
+          dependencies: [
+              {
+                key: "provider",
+                value: ["gemini-flash-1.5"]
+              }
+          ]
+      },
+      {
+        key: "translateto",
+        title: "Translate to",
+        type: "select",
+        required: true,
+        options: baseLanguages
+      }
+    ],
+    description:
+      "This addon takes subtitles from OpenSubtitlesV3 then translates into desired language using Gemini Flash 1.5 Free Tier.",
+    types: ["series", "movie"],
+    catalogs: [],
+    resources: ["subtitles"],
+  });
 
 // Initialize the generative AI client (will be set after validation)
 let genAI;

@@ -8,30 +8,66 @@
 }
 
 aitranslator.thepi.es {
-    # Enable compression
+    log {
+        output file /var/log/caddy/aitranslator.log {
+            roll_size 10mb
+            roll_keep 5
+            roll_keep_for 720h
+        }
+        format json
+    }
+
+    # Health check endpoint
+    handle /health {
+        respond "OK" 200
+    }
+
+    # Main reverse proxy
+    reverse_proxy localhost:11470 {
+        # Timeouts
+        timeout 300s
+        
+        # Health checks
+        health_uri /health
+        health_interval 30s
+        health_timeout 10s
+        health_status 200
+        
+        # Headers
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        
+        # Compression
+        transport http {
+            compression
+        }
+    }
+
+    # Security headers
+    header {
+        # Enable HSTS
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        # Prevent clickjacking
+        X-Frame-Options "SAMEORIGIN"
+        # XSS protection
+        X-XSS-Protection "1; mode=block"
+        # Prevent MIME type sniffing
+        X-Content-Type-Options "nosniff"
+        # Referrer policy
+        Referrer-Policy "strict-origin-when-cross-origin"
+        # Remove Server header
+        -Server
+    }
+
+    # Enable Gzip compression
     encode gzip
 
-    # Handle manifest endpoint
-    handle /manifest.json {
-        reverse_proxy 192.168.50.67:7000
-    }
-
-    # Handle subtitle endpoints
-    handle /subtitles/* {
-        reverse_proxy 192.168.50.67:3000
-    }
-
-    # Handle configuration endpoints
-    handle /config {
-        reverse_proxy 192.168.50.67:3000
-    }
-
-    handle /save-credentials {
-        reverse_proxy 192.168.50.67:3000
-    }
-
-    # Default 404 for unmatched routes
-    handle {
-        respond 404
+    # TLS configuration
+    tls {
+        protocols tls1.2 tls1.3
+        curves x25519 secp521r1 secp384r1 secp256r1
+        ciphers TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256 TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
     }
 } 

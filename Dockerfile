@@ -1,27 +1,42 @@
 FROM node:20-alpine
 
+# Install debugging tools
+RUN apk add --no-cache \
+    bash \
+    curl \
+    htop \
+    nano \
+    procps \
+    tcpdump \
+    vim
+
+# Create app directory
 WORKDIR /app
 
-# Install dependencies
-COPY package*.json ./
-RUN npm ci --only=production
+# Install pnpm
+RUN npm install -g pnpm
 
-# Copy application files
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
 COPY . .
 
-# Create directory for subtitles and ensure proper permissions
-RUN mkdir -p subtitles/dut && \
-    touch credentials.json && \
-    echo '{}' > credentials.json && \
-    chown -R node:node /app && \
-    chmod -R 755 /app && \
-    chmod 666 credentials.json
+# Build the application
+RUN pnpm run build
 
-# Switch to non-root user
-USER node
+# Environment variables
+ENV NODE_ENV=production
+ENV DEBUG=stremio:*
+ENV DEBUG_COLORS=true
+ENV DEBUG_DEPTH=10
 
 # Expose ports
-EXPOSE 3000
-EXPOSE 7000
+EXPOSE 11470
+EXPOSE 9229
 
-CMD ["node", "index.js"] 
+# Start with debugging enabled
+CMD ["node", "--inspect=0.0.0.0:9229", "dist/index.js"] 
