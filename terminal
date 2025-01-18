@@ -719,26 +719,97 @@ git push origin v1.3.0
 docker compose down
 docker compose up -d --build 
 
-# Update files
-git add src/index.js manifest.json esbuild.config.js Caddyfile.compose
+# Update Caddyfiles
+git add Caddyfile.external Caddyfile.compose
 
 # Commit changes
-git commit -m "fix: update configuration page handling \
-- Add dedicated /configure endpoint
-- Update manifest configurationURL
-- Fix config.html file copying
-- Update Caddy configuration"
+git commit -m "feat: add root redirect to configure page \
+- Add redirect from / to /configure
+- Update both Caddyfile versions
+- Ensure consistent configuration handling"
 
 # Create new version tag
-git tag -a v1.3.1 -m "Version 1.3.1 - Fix configuration page"
+git tag -a v1.3.2 -m "Version 1.3.2 - Add root redirect"
 
 # Push changes
 git push origin main
-git push origin v1.3.1
+git push origin v1.3.2
 
 # Rebuild
 docker compose down
-docker compose up -d --build
+docker compose up -d --build 
 
-# Check logs
-docker compose logs -f 
+# Install new dependency
+pnpm add ejs
+
+# Create templates directory
+mkdir -p src/templates
+mv src/config.html src/templates/
+
+# Update files
+git add src/templates/config.html src/index.js package.json
+
+# Commit changes
+git commit -m "feat: enhance configuration page \
+- Add Shoelace UI components
+- Implement proper templating with EJS
+- Add validation feedback
+- Improve styling and UX"
+
+# Create new version tag
+git tag -a v1.3.3 -m "Version 1.3.3 - Enhanced configuration interface"
+
+# Push changes
+git push origin main
+git push origin v1.3.3
+
+# Rebuild
+docker compose down
+docker compose up -d --build 
+
+# Update files
+git add Dockerfile esbuild.config.js
+
+# Commit changes
+git commit -m "fix: update Dockerfile for template handling \
+- Add template directory copying
+- Remove template copying from esbuild
+- Ensure proper file structure in production"
+
+# Create new version tag
+git tag -a v1.3.4 -m "Version 1.3.4 - Fix template handling"
+
+# Push changes
+git push origin main
+git push origin v1.3.4
+
+# Rebuild
+docker compose down
+docker compose up -d --build 
+
+# Create assets directory
+mkdir -p src/assets
+
+# Copy wallpaper to assets
+cp wallpaper.png src/assets/
+
+# Update files
+git add src/templates/config.html src/assets/wallpaper.png Dockerfile
+
+# Commit changes
+git commit -m "feat: enhance configuration page design \
+- Add beautiful wallpaper background
+- Improve container styling with blur effect
+- Center content vertically and horizontally
+- Update static asset handling"
+
+# Create new version tag
+git tag -a v1.3.5 -m "Version 1.3.5 - Enhanced visual design"
+
+# Push changes
+git push origin main
+git push origin v1.3.5
+
+# Rebuild
+docker compose down
+docker compose up -d --build 

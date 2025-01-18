@@ -17,6 +17,9 @@ aitranslator.yourdomain.com {
         format json
     }
 
+    # Redirect root to configure page
+    redir / /configure 301
+
     # Health check endpoint
     handle /health {
         respond "OK" 200
@@ -38,6 +41,11 @@ aitranslator.yourdomain.com {
         header_up X-Real-IP {remote_host}
         header_up X-Forwarded-For {remote_host}
         header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Handle configuration page
+    handle /configure {
+        reverse_proxy localhost:7000
     }
 
     # Security headers

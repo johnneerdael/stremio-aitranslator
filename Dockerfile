@@ -1,62 +1,55 @@
-# Build stage
-FROM node:20-alpine AS builder
+FROM node:20-alpine as base
 
 # Install pnpm
-RUN npm install -g pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Set working directory
 WORKDIR /app
 
 # Copy package files
-COPY package.json ./
+COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies
-RUN pnpm install
-
-# Copy source code
+# Development stage
+FROM base as development
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
 COPY . .
+CMD ["pnpm", "dev"]
 
-# Create required directories
-RUN mkdir -p static dist subtitles/dut
-
-# Build the application
+# Build stage
+FROM base as build
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
+COPY . .
 RUN pnpm build
 
 # Production stage
-FROM node:20-alpine AS production
-
-# Install system utilities
-RUN apk add --no-cache \
-    bash \
-    curl \
-    htop \
-    nano \
-    procps \
-    tcpdump \
-    vim
-
-# Set working directory
+FROM node:20-alpine as production
 WORKDIR /app
 
-# Install pnpm and production dependencies only
-RUN npm install -g pnpm
+# Create necessary directories
+RUN mkdir -p dist/templates static/templates subtitles/dut langs
 
-# Copy package files
-COPY package.json ./
+# Copy built files and dependencies
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/package.json ./
+COPY --from=build /app/pnpm-lock.yaml ./
+
+# Copy templates
+COPY --from=build /app/src/templates ./dist/templates
+COPY --from=build /app/src/templates ./static/templates
+
+# Copy static assets
+COPY --from=build /app/src/assets/wallpaper.png ./static/wallpaper.png
 
 # Install production dependencies only
-RUN pnpm install --prod
+RUN corepack enable && corepack prepare pnpm@latest --activate && \
+    pnpm install --prod --frozen-lockfile
 
-# Copy built files from builder
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/static ./static
-COPY --from=builder /app/langs ./langs
+# Create data directory for credentials
+RUN mkdir -p data
 
-# Create directories if they don't exist
-RUN mkdir -p static langs
+# Set permissions
+RUN chown -R node:node /app
 
-# Expose port
+USER node
+
 EXPOSE 7000
-
-# Start the application
 CMD ["node", "dist/index.js"] 

@@ -18,6 +18,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(STATIC_PATH));
 
+// Configure template engine
+app.set('view engine', 'html');
+app.set('views', path.join(__dirname, 'templates'));
+app.engine('html', require('ejs').renderFile);
+
 // Request logging middleware
 app.use((req, res, next) => {
     debug(`${req.method} ${req.url}`);
@@ -148,7 +153,10 @@ app.post('/validate-key', async (req, res) => {
 
 // Serve config page
 app.get('/configure', (req, res) => {
-    res.sendFile(path.join(__dirname, 'config.html'));
+    res.render('config.html', {
+        version: require('../package.json').version,
+        languages: ['Dutch'], // Add more languages as needed
+    });
 });
 
 startServer(); 

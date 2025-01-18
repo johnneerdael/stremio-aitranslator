@@ -14,6 +14,9 @@ aitranslator.yourdomain.com {
         format json
     }
 
+    # Redirect root to configure page
+    redir / /configure 301
+
     # Health check endpoint
     handle /health {
         respond "OK" 200
