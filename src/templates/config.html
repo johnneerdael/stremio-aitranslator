@@ -32,9 +32,8 @@
         }
 
         .container {
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
+            width: 45vh;
+            margin: auto;
             background: rgba(24, 24, 24, 0.95);
             backdrop-filter: blur(10px);
             padding: 1.5rem;
@@ -259,11 +258,64 @@
                 Version <%= version %>
             </div>
 
-            <a href="stremio://addon/<%= Buffer.from(req.protocol + '://' + req.get('host')).toString('base64') %>" class="install-button">Install in Stremio</a>
+            <button onclick="installAddon()" class="install-button">Install in Stremio</button>
         </div>
     </div>
 
     <script>
+        async function installAddon() {
+            const geminiKey = document.getElementById('geminiKey').value;
+            if (!geminiKey) {
+                showStatus('Please enter and validate your API key first', 'error');
+                return;
+            }
+
+            try {
+                // Validate key first
+                const validateResponse = await fetch('/validate-key', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ geminiApiKey: geminiKey })
+                });
+
+                if (!validateResponse.ok) {
+                    showStatus('Please enter a valid API key', 'error');
+                    return;
+                }
+
+                // Save configuration
+                const saveResponse = await fetch('/save-credentials', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        geminiApiKey: geminiKey,
+                        translateTo: document.getElementById('translateTo').value,
+                        cacheTime: parseInt(document.getElementById('cacheTime').value),
+                        maxConcurrent: parseInt(document.getElementById('maxConcurrent').value),
+                        debugMode: document.getElementById('debugMode').checked
+                    })
+                });
+
+                if (!saveResponse.ok) {
+                    showStatus('Error saving configuration', 'error');
+                    return;
+                }
+
+                // Create installation URL with API key
+                const host = window.location.protocol + '//' + window.location.host;
+                const installUrl = 'stremio://addon/' + btoa(host);
+                
+                showStatus('Configuration saved! Installing addon...', 'success');
+                window.location.href = installUrl;
+            } catch (error) {
+                showStatus('Error: ' + error.message, 'error');
+            }
+        }
+
         async function validateKey() {
             const geminiKey = document.getElementById('geminiKey').value;
             const validateBtn = document.getElementById('validateBtn');

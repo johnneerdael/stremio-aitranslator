@@ -132,8 +132,10 @@ app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
 
-app.get('/:path(*)', (req, res) => {
-  serveHTTP(addonInterface, req, res);
+app.get('/:path(*)', async (req, res) => {
+  const config = await getConfig();
+  const interface = await addonInterface.getInterface(config.geminiApiKey);
+  serveHTTP(interface, req, res);
 });
 
 app.listen(PORT, () => {
