@@ -71,7 +71,8 @@ app.get('/configure', async (req, res) => {
     manifest,
     version: packageJson.version,
     config,
-    languages
+    languages,
+    req
   });
 });
 

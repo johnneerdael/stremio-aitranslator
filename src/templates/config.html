@@ -259,7 +259,7 @@
                 Version <%= version %>
             </div>
 
-            <a href="stremio://addon/<%= Buffer.from(`https://aitranslator.thepi.es`).toString('base64') %>" class="install-button">Install in Stremio</a>
+            <a href="stremio://addon/<%= Buffer.from(req.protocol + '://' + req.get('host')).toString('base64') %>" class="install-button">Install in Stremio</a>
         </div>
     </div>
 
@@ -277,7 +277,7 @@
             validateBtn.textContent = 'Validating...';
             
             try {
-                const response = await fetch('https://aitranslator.thepi.es/validate-key', {
+                const response = await fetch('/validate-key', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -316,7 +316,7 @@
             saveBtn.textContent = 'Saving...';
             
             try {
-                const response = await fetch('https://aitranslator.thepi.es/save-credentials', {
+                const response = await fetch('/save-credentials', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
