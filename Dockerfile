@@ -60,6 +60,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     sqlite3 \
     libsqlite3-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/* && \
     python3 -m venv /opt/venv && \
     . /opt/venv/bin/activate && \

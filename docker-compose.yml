@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  aitranslator:
+    build:
+      context: .
+      target: production
+    ports:
+      - "7000:7000"
+    volumes:
+      - ./data:/app/data
+      - ./langs:/app/langs
+      - ./subtitles:/app/subtitles
+    environment:
+      - DEBUG=stremio:*
+      - NODE_ENV=production
+    restart: unless-stopped
+    init: true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

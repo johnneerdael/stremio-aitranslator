@@ -1,12 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const sqlite3 = require('sqlite3');
-const { open } = require('sqlite');
 const { serveHTTP } = require('stremio-addon-sdk');
 const addonInterface = require('./addon');
 const { validateGeminiKey } = require('./translateProvider');
 const LanguageService = require('./services/languages');
+const DatabaseService = require('./services/database');
 
 // Default configuration
 const DEFAULT_CONFIG = {
@@ -16,24 +15,23 @@ const DEFAULT_CONFIG = {
   translateTo: 'Dutch'
 };
 
+const app = express();
+let db;
+
 // Initialize database
 async function initDb() {
-  const db = await open({
-    filename: 'data/config.db',
-    driver: sqlite3.Database
-  });
-
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS config (
-      key TEXT PRIMARY KEY,
-      value TEXT
-    );
-  `);
-
+  db = await DatabaseService.getInstance();
+  
+  // Set default config values if not exists
+  const config = await db.getAllConfig();
+  for (const [key, value] of Object.entries(DEFAULT_CONFIG)) {
+    if (!(key in config)) {
+      await db.setConfig(key, value);
+    }
+  }
+  
   return db;
 }
-
-const app = express();
 const PORT = process.env.PORT || 7000;
 
 app.use(cors());
@@ -46,9 +44,9 @@ app.engine('html', require('ejs').renderFile);
 app.set('view engine', 'html');
 app.set('views', path.join(__dirname, 'templates'));
 
-let db;
+// Initialize database on startup
 (async () => {
-  db = await initDb();
+  await initDb();
 })();
 
 // Landing page
@@ -74,16 +72,12 @@ app.get('/configure', async (req, res) => {
 // Get current configuration
 async function getConfig() {
   const config = {...DEFAULT_CONFIG};
-  const rows = await db.all('SELECT key, value FROM config');
+  const dbConfig = await db.getAllConfig();
   
-  rows.forEach(row => {
-    if (row.key === 'geminiApiKey') return; // Don't expose API key
-    try {
-      config[row.key] = JSON.parse(row.value);
-    } catch {
-      config[row.key] = row.value;
-    }
-  });
+  for (const [key, value] of Object.entries(dbConfig)) {
+    if (key === 'geminiApiKey') continue; // Don't expose API key
+    config[key] = value;
+  }
   
   return config;
 }
@@ -100,16 +94,11 @@ app.post('/save-credentials', async (req, res) => {
 
   try {
     // Save all config values
-    await db.run('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)', 
-      'geminiApiKey', geminiApiKey);
-    await db.run('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)',
-      'translateTo', translateTo);
-    await db.run('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)',
-      'cacheTime', JSON.stringify(cacheTime));
-    await db.run('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)',
-      'maxConcurrent', JSON.stringify(maxConcurrent));
-    await db.run('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)',
-      'debugMode', JSON.stringify(debugMode));
+    await db.setConfig('geminiApiKey', geminiApiKey);
+    await db.setConfig('translateTo', translateTo);
+    await db.setConfig('cacheTime', cacheTime);
+    await db.setConfig('maxConcurrent', maxConcurrent);
+    await db.setConfig('debugMode', debugMode);
 
     res.sendStatus(200);
   } catch (error) {
@@ -131,10 +120,15 @@ app.post('/validate-key', async (req, res) => {
 });
 
 // Serve the addon
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 app.get('/:path(*)', (req, res) => {
   serveHTTP(addonInterface, req, res);
 });
 
 app.listen(PORT, () => {
   console.log(`Addon active on port ${PORT}`);
-}); 
+});
