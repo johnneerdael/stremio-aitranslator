@@ -16,7 +16,7 @@ class DatabaseService {
     }
 
     async init() {
-        const dbPath = path.join(__dirname, '../../data/translations.db');
+        const dbPath = path.join(__dirname, '../../data/stremio.db');
         
         this.db = await open({
             filename: dbPath,
@@ -50,10 +50,16 @@ class DatabaseService {
 
             CREATE INDEX IF NOT EXISTS idx_status 
             ON translations(status);
+
+            CREATE TABLE IF NOT EXISTS config (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            );
         `);
         debug('Database tables created');
     }
 
+    // Translation methods
     async getTranslation(key) {
         const result = await this.db.get(
             'SELECT * FROM translations WHERE id = ?',
@@ -84,6 +90,46 @@ class DatabaseService {
         ]);
     }
 
+    // Config methods
+    async getConfig(key) {
+        const row = await this.db.get(
+            'SELECT value FROM config WHERE key = ?',
+            [key]
+        );
+        if (!row) return null;
+        try {
+            return JSON.parse(row.value);
+        } catch {
+            return row.value;
+        }
+    }
+
+    async setConfig(key, value) {
+        const stringValue = typeof value === 'object' ? 
+            JSON.stringify(value) : String(value);
+            
+        await this.db.run(
+            'INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)',
+            [key, stringValue]
+        );
+    }
+
+    async getAllConfig() {
+        const rows = await this.db.all('SELECT key, value FROM config');
+        const config = {};
+        
+        rows.forEach(row => {
+            try {
+                config[row.key] = JSON.parse(row.value);
+            } catch {
+                config[row.key] = row.value;
+            }
+        });
+        
+        return config;
+    }
+
+    // Statistics methods
     async getStats() {
         const stats = await this.db.get(`
             SELECT 

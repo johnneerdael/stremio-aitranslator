@@ -10,11 +10,8 @@ FROM node:20.11.0-slim AS base
 # - https://github.com/nodejs/node-gyp#installation
 # - https://github.com/nodejs/node-gyp/issues/2869
 RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-distutils \
-    python3-pip \
-    python3-setuptools \
-    python3-pkg-resources \
+    python3-full \
+    python3-venv \
     make \
     g++ \
     gcc \
@@ -22,7 +19,11 @@ RUN apt-get update && apt-get install -y \
     sqlite3 \
     libsqlite3-dev \
     && rm -rf /var/lib/apt/lists/* && \
-    python3 -m pip install --no-cache-dir setuptools wheel
+    python3 -m venv /opt/venv
+    
+# Activate virtual environment and install Python packages
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install --no-cache-dir setuptools wheel
 
 # Install pnpm using corepack (Node.js built-in package manager manager)
 # Refs:
@@ -71,18 +72,19 @@ WORKDIR /app
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-distutils \
-    python3-pip \
-    python3-setuptools \
-    python3-pkg-resources \
+    python3-full \
+    python3-venv \
     make \
     g++ \
     gcc \
     sqlite3 \
     libsqlite3-dev \
     && rm -rf /var/lib/apt/lists/* && \
-    python3 -m pip install --no-cache-dir setuptools wheel
+    python3 -m venv /opt/venv
+
+# Activate virtual environment and install Python packages
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install --no-cache-dir setuptools wheel
 
 # Create necessary directories for application data
 # Refs:
