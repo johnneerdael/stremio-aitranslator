@@ -6,13 +6,14 @@ const addonInterface = require('./addon');
 const { validateGeminiKey } = require('./translateProvider');
 const LanguageService = require('./services/languages');
 const DatabaseService = require('./services/database');
+const debug = require('debug')('stremio:*');
 
 // Default configuration
 const DEFAULT_CONFIG = {
   cacheTime: 24, // hours
   maxConcurrent: 3,
   debugMode: false,
-  translateTo: 'Dutch'
+  translateTo: 'nl'
 };
 
 const app = express();
@@ -67,6 +68,10 @@ app.get('/configure', async (req, res) => {
   const languageService = await LanguageService.getInstance();
   const languages = await languageService.getLanguages();
 
+  debug('Configuration page accessed');
+  debug('Current config:', config);
+  debug('Available languages:', languages);
+
   res.render('config.html', {
     manifest,
     version: packageJson.version,
@@ -99,6 +104,14 @@ app.post('/save-credentials', async (req, res) => {
     debugMode
   } = req.body;
 
+  debug('Saving configuration:', {
+    translateTo,
+    cacheTime,
+    maxConcurrent,
+    debugMode,
+    hasApiKey: !!geminiApiKey
+  });
+
   try {
     // Save all config values
     await db.setConfig('geminiApiKey', geminiApiKey);
@@ -107,6 +120,7 @@ app.post('/save-credentials', async (req, res) => {
     await db.setConfig('maxConcurrent', maxConcurrent);
     await db.setConfig('debugMode', debugMode);
 
+    debug('Configuration saved successfully');
     res.sendStatus(200);
   } catch (error) {
     console.error('Error saving credentials:', error);
@@ -118,10 +132,13 @@ app.post('/save-credentials', async (req, res) => {
 app.post('/validate-key', async (req, res) => {
   const { geminiApiKey } = req.body;
   
+  debug('Validating API key');
   try {
     await validateGeminiKey(geminiApiKey);
+    debug('API key validation successful');
     res.sendStatus(200);
   } catch (error) {
+    debug('API key validation failed:', error.message);
     res.status(400).send(error.message);
   }
 });
@@ -133,9 +150,51 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/:path(*)', async (req, res) => {
-  const config = await getConfig();
-  const interface = await addonInterface.getInterface(config.geminiApiKey);
-  serveHTTP(interface, req, res);
+  try {
+    // Get configuration from query parameters
+    const {
+      key: apiKey,
+      lang: translateTo,
+      cache: cacheTime,
+      concurrent: maxConcurrent,
+      debug: debugMode
+    } = req.query;
+    
+    debug('Addon request:', {
+      path: req.path,
+      hasApiKey: !!apiKey,
+      translateTo,
+      cacheTime,
+      maxConcurrent,
+      debugMode
+    });
+
+    if (!apiKey) {
+      // If no key provided, redirect to configuration page
+      if (req.path === '/manifest.json') {
+        debug('No API key provided, redirecting to configure page');
+        return res.redirect('/configure');
+      }
+    }
+
+    // Save configuration to Redis
+    if (apiKey) {
+      debug('Saving configuration from URL parameters');
+      await db.setConfig('geminiApiKey', apiKey);
+      if (translateTo) await db.setConfig('translateTo', translateTo);
+      if (cacheTime) await db.setConfig('cacheTime', parseInt(cacheTime));
+      if (maxConcurrent) await db.setConfig('maxConcurrent', parseInt(maxConcurrent));
+      if (debugMode) await db.setConfig('debugMode', debugMode === 'true');
+    }
+
+    // Create interface with the provided configuration
+    const interface = await addonInterface.getInterface(apiKey);
+    debug('Created addon interface, serving request');
+    serveHTTP(interface, req, res);
+  } catch (error) {
+    console.error('Error serving addon:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 app.listen(PORT, () => {
