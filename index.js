@@ -298,9 +298,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Serve static files
 app.use(express.static(__dirname));
 
-// Update config.html content to only ask for Gemini API key
 app.get('/config', (req, res) => {
-    res.sendFile(__dirname + '/config.html');
+    res.sendFile(__dirname + '/landing.html');
 });
 
 // Handle form submission with validation

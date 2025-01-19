@@ -31,10 +31,11 @@ RUN pnpm build
 FROM node:20.11.0-slim AS production
 WORKDIR /app
 
-# Install runtime dependencies
+# Install runtime dependencies and pnpm
 RUN apt-get update && apt-get install -y \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && corepack enable && corepack prepare pnpm@latest --activate
 
 # Create necessary directories
 RUN mkdir -p dist/templates static/templates subtitles/dut langs data

@@ -20,10 +20,7 @@ class LanguageService {
                 'utf-8'
             );
             const langData = JSON.parse(langFile);
-            this.languages = Object.entries(langData).map(([code, name]) => ({
-                code,
-                name
-            }));
+            this.languages = langData.languages;
         } catch (error) {
             console.error('Error loading languages:', error);
             this.languages = [{ code: 'dut', name: 'Dutch' }];
@@ -40,4 +37,4 @@ class LanguageService {
     }
 }
 
-module.exports = LanguageService; 
+module.exports = LanguageService;

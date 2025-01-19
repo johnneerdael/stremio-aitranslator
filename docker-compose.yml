@@ -27,9 +27,9 @@ services:
     environment:
       - DEBUG=stremio:*
       - NODE_ENV=production
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=redis://redis-aitranslator:6379
     depends_on:
-      redis:
+      redis-aitranslator:
         condition: service_healthy
     restart: unless-stopped
     init: true

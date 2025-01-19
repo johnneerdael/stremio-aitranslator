@@ -1,7 +1,7 @@
 mkdir -p src
 mv config.html src/config.html
 git rm static/config.html
-git add src/config.html
+git add landing.html
 git commit -m "refactor: move config.html to src directory"
 git tag -a v1.1.0 -m "Version 1.1.0 - Initial project structure"
 

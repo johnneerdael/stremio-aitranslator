@@ -49,10 +49,15 @@ app.set('views', path.join(__dirname, 'templates'));
   await initDb();
 })();
 
+// Load manifest and package.json once at startup
+const manifest = require('../manifest.json');
+const packageJson = require('../package.json');
+
 // Landing page
 app.get('/', (req, res) => {
   res.render('landing.html', {
-    manifest: require('../manifest.json')
+    manifest,
+    version: packageJson.version
   });
 });
 
@@ -62,8 +67,9 @@ app.get('/configure', async (req, res) => {
   const languageService = await LanguageService.getInstance();
   const languages = await languageService.getLanguages();
 
-  res.render('landing.html', {
-    version: require('../package.json').version,
+  res.render('config.html', {
+    manifest,
+    version: packageJson.version,
     config,
     languages
   });
