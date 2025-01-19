@@ -16,8 +16,6 @@ RUN apt-get update && apt-get install -y \
     g++ \
     gcc \
     git \
-    sqlite3 \
-    libsqlite3-dev \
     && rm -rf /var/lib/apt/lists/* && \
     python3 -m venv /opt/venv
     
@@ -53,16 +51,8 @@ COPY . .
 
 # Set build configuration
 # CFLAGS/CXXFLAGS: Optimize native module compilation
-# npm_config_*: Configure sqlite3 build settings
-# Refs:
-# - https://github.com/mapbox/node-sqlite3/wiki/Building-on-Linux
-# - https://github.com/npm/node-gyp#command-line-options
 ENV CFLAGS="-O2"
 ENV CXXFLAGS="-O2"
-ENV npm_config_build_from_source=true
-ENV npm_config_sqlite=/usr
-ENV npm_config_sqlite_libname=sqlite3
-RUN npm rebuild sqlite3 --build-from-source
 
 RUN pnpm build
 
@@ -77,8 +67,6 @@ RUN apt-get update && apt-get install -y \
     make \
     g++ \
     gcc \
-    sqlite3 \
-    libsqlite3-dev \
     && rm -rf /var/lib/apt/lists/* && \
     python3 -m venv /opt/venv
 

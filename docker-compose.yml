@@ -1,7 +1,6 @@
-version: '3.8'
-
 services:
-  redis:
+  redis-aitranslator:
+    container_name: aitranslator-database
     image: redis:alpine
     ports:
       - "6379:6379"
@@ -15,6 +14,7 @@ services:
       start_period: 10s
 
   aitranslator:
+    container_name: aitranslator
     build:
       context: .
       target: production

@@ -1,5 +1,4 @@
-const sqlite3 = require('sqlite3');
-const { open } = require('sqlite');
+const RedisService = require('./redis');
 const debug = require('debug')('stremio:config');
 
 // Default configuration
@@ -12,7 +11,7 @@ const DEFAULT_CONFIG = {
 
 class ConfigService {
     static instance;
-    db = null;
+    redis = null;
 
     static async getInstance() {
         if (!ConfigService.instance) {
@@ -23,50 +22,33 @@ class ConfigService {
     }
 
     async init() {
-        this.db = await open({
-            filename: 'data/config.db',
-            driver: sqlite3.Database
-        });
+        this.redis = await RedisService.getInstance();
 
-        await this.db.exec(`
-            CREATE TABLE IF NOT EXISTS config (
-                key TEXT PRIMARY KEY,
-                value TEXT
-            );
-        `);
+        // Set default config values if not exists
+        const config = await this.getAll();
+        for (const [key, value] of Object.entries(DEFAULT_CONFIG)) {
+            if (!(key in config)) {
+                await this.set(key, value);
+            }
+        }
     }
 
     async getAll() {
         const config = {...DEFAULT_CONFIG};
-        const rows = await this.db.all('SELECT key, value FROM config');
+        const redisConfig = await this.redis.getAllConfig();
         
-        rows.forEach(row => {
-            try {
-                config[row.key] = JSON.parse(row.value);
-            } catch {
-                config[row.key] = row.value;
-            }
-        });
-        
-        return config;
+        return {...config, ...redisConfig};
     }
 
     async get(key) {
-        const row = await this.db.get('SELECT value FROM config WHERE key = ?', key);
-        if (!row) return DEFAULT_CONFIG[key];
-        
-        try {
-            return JSON.parse(row.value);
-        } catch {
-            return row.value;
-        }
+        const value = await this.redis.getConfig(key);
+        return value ?? DEFAULT_CONFIG[key];
     }
 
     async set(key, value) {
-        const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
-        await this.db.run('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)', key, stringValue);
-        if (this.isDebugMode()) {
-            debug(`Config updated: ${key} = ${stringValue}`);
+        await this.redis.setConfig(key, value);
+        if (await this.isDebugMode()) {
+            debug(`Config updated: ${key} = ${JSON.stringify(value)}`);
         }
     }
 
@@ -75,4 +57,4 @@ class ConfigService {
     }
 }
 
-module.exports = ConfigService; 
+module.exports = ConfigService;
