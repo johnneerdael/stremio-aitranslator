@@ -45,7 +45,7 @@ ENV npm_config_sqlite=/usr
 ENV npm_config_sqlite_libname=sqlite3
 
 # Build sqlite3 and the project
-RUN npm rebuild sqlite3 --build-from-source && pnpm build
+RUN pnpm build
 
 # Production stage
 FROM node:20.11.0-slim AS production
@@ -72,8 +72,15 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Create necessary directories
 RUN mkdir -p dist/templates static/templates subtitles/dut langs data
 
-# Copy the entire app directory to preserve node_modules structure
-COPY --from=build /app .
+# Copy built files and package files
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/package.json ./
+COPY --from=build /app/src/templates ./dist/templates
+COPY --from=build /app/src/templates ./static/templates
+
+# Install production dependencies and rebuild sqlite3
+RUN pnpm install --prod && \
+    npm rebuild sqlite3 --build-from-source
 
 # Set permissions
 RUN chown -R node:node /app
