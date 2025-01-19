@@ -1,6 +1,6 @@
 {
     "id": "stremio.aitranslator",
-    "version": "1.5.5",
+    "version": "1.5.6",
     "name": "AI Subtitle Translator",
     "description": "Translates subtitles using Google Gemini Flash 1.5 Free Tier",
     "background": "/wallpaper.png",
