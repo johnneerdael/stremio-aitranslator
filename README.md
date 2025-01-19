@@ -1,127 +1,98 @@
-# Stremio AI Translator
+# AI Subtitle Translator for Stremio
 
-A Stremio addon that provides real-time subtitle translation using Google's Gemini AI. This service automatically translates subtitles across multiple languages while maintaining high quality and context awareness.
+A Stremio addon that automatically translates English subtitles using Google's Gemini AI.
 
 ## Features
 
-- Real-time subtitle translation using Google's Gemini AI
-- Support for multiple languages
-- Redis-based caching for improved performance
-- Queue management for translation requests
-- Web-based configuration interface
-- Docker deployment support
-- Caddy reverse proxy integration
+- Automatic subtitle translation from English
+- Supports both movies and series
+- Uses Google Gemini AI for translation
+- Built-in caching system
+- Configurable settings
 
 ## Prerequisites
 
-- Node.js 18+
-- Redis
-- Docker and Docker Compose (for containerized deployment)
-- Google Gemini AI API key
+1. Google Gemini API Key (Get it from [Google AI Studio](https://makersuite.google.com/app/apikey))
+2. Docker and Docker Compose
 
-## Local Development Setup
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/johnneerdael/stremio-aitranslator.git
+cd stremio-aitranslator
+```
+
+2. Configure Redis System Parameters:
+
+For optimal Redis performance, set the following system parameters on your host machine:
 
 ```bash
-# Clone the repository
-git clone https://github.com/johnneerdael/stremio-aitranslator
-cd stremio-aitranslator
+# Set vm.overcommit_memory to 1
+sudo sysctl vm.overcommit_memory=1
 
-# Install dependencies
+# Make it permanent
+echo "vm.overcommit_memory = 1" | sudo tee -a /etc/sysctl.conf
+
+# Set maximum number of connections
+echo "net.core.somaxconn = 511" | sudo tee -a /etc/sysctl.conf
+
+# Apply changes
+sudo sysctl -p
+```
+
+3. Start the services:
+```bash
+docker-compose up -d
+```
+
+4. Access the addon at:
+```
+http://localhost:7000
+```
+
+## Configuration
+
+1. Visit the configuration page at `http://localhost:7000/configure`
+2. Enter your Google Gemini API key
+3. Configure translation settings:
+   - Target Language
+   - Cache Duration
+   - Max Concurrent Translations
+   - Debug Mode
+
+## Development
+
+1. Install dependencies:
+```bash
 npm install
+```
 
-# Start development server
+2. Run in development mode:
+```bash
 npm run dev
+```
+
+## Building
+
+```bash
+npm run build
 ```
 
 ## Environment Variables
 
-```env
-GEMINI_API_KEY=your_gemini_api_key
-REDIS_URL=redis://localhost:6379
-PORT=7000
-```
+- `PORT`: Server port (default: 7000)
+- `DEBUG`: Debug logging (e.g., stremio:*)
+- `NODE_ENV`: Environment (development/production)
+- `REDIS_URL`: Redis connection URL
 
-## Docker Deployment
+## Docker Volumes
 
-### Basic Setup
-
-```yaml
-version: '3.8'
-
-services:
-  app:
-    build: .
-    ports:
-      - "7000:7000"
-    environment:
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - REDIS_URL=redis://redis:6379
-    depends_on:
-      - redis
-
-  redis:
-    image: redis:alpine
-    volumes:
-      - redis_data:/data
-
-volumes:
-  redis_data:
-```
-
-### Production Setup with Caddy
-
-Use the provided `docker-compose.yml` and `Caddyfile.external` for production deployment with Caddy reverse proxy.
-
-#### External Caddyfile Configuration
-
-```caddyfile
-{
-    email admin@yourdomain.com
-    tls {
-        dns cloudflare {$CLOUDFLARE_API_TOKEN}
-        resolvers 1.1.1.1
-    }
-}
-
-aitranslator.thepi.es {
-    redir / /configure 301
-
-    handle_path /configure {
-        reverse_proxy localhost:7000
-    }
-
-    reverse_proxy localhost:7000 {
-    }
-}
-```
-
-## Configuration Interface
-
-Access the configuration interface at:
-- Local development: http://localhost:7000/configure
-- Production: https://aitranslator.thepi.es/configure
-
-## Version History
-
-### v1.5.0
-- Added Caddy reverse proxy support with Cloudflare DNS
-- Improved production deployment configuration
-- Enhanced documentation
-
-### v1.4.1
-- Initial public release
-- Google Gemini AI integration
-- Basic translation functionality
-- Redis caching implementation
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- `./data`: Persistent data storage
+- `./langs`: Language configuration files
+- `./subtitles`: Subtitle cache
+- `redis_data`: Redis database
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT
