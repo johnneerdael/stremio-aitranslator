@@ -1,63 +1,49 @@
-# AI Subtitle Translation Service
+# Stremio AI Translator
 
-An automated subtitle translation service that uses AI to provide high-quality translations across multiple languages.
+A Stremio addon that provides real-time subtitle translation using Google's Gemini AI. This service automatically translates subtitles across multiple languages while maintaining high quality and context awareness.
 
 ## Features
 
-- AI-powered subtitle translation
-- Support for multiple subtitle formats
-- OpenSubtitles.org integration
-- Rate limiting and queue management
+- Real-time subtitle translation using Google's Gemini AI
+- Support for multiple languages
+- Redis-based caching for improved performance
+- Queue management for translation requests
+- Web-based configuration interface
 - Docker deployment support
-- REST API endpoints
+- Caddy reverse proxy integration
+
+## Prerequisites
+
+- Node.js 18+
+- Redis
+- Docker and Docker Compose (for containerized deployment)
+- Google Gemini AI API key
 
 ## Local Development Setup
 
-### Prerequisites
-
-- Node.js 18+
-- npm or yarn
-- MongoDB 6.0+
-
-### Installation
-
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ai-subtitle-translator
-cd ai-subtitle-translator
+git clone https://github.com/johnneerdael/stremio-aitranslator
+cd stremio-aitranslator
 
 # Install dependencies
 npm install
 
-# Create .env file
-cp .env.example .env
-
-# Update .env with your configuration
-nano .env
-```
-
-### Environment Variables
-
-```env
-MONGO_URI=mongodb://localhost:27017/subtitles
-OPENSUBTITLES_API_KEY=your_api_key
-AI_API_KEY=your_ai_api_key
-PORT=3000
-```
-
-### Running Locally
-
-```bash
 # Start development server
 npm run dev
+```
 
-# Run tests
-npm test
+## Environment Variables
+
+```env
+GEMINI_API_KEY=your_gemini_api_key
+REDIS_URL=redis://localhost:6379
+PORT=7000
 ```
 
 ## Docker Deployment
 
-### Basic Docker Compose Setup
+### Basic Setup
 
 ```yaml
 version: '3.8'
@@ -66,121 +52,67 @@ services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      - "7000:7000"
     environment:
-      - MONGO_URI=mongodb://mongo:27017/subtitles
-      - OPENSUBTITLES_API_KEY=${OPENSUBTITLES_API_KEY}
-      - AI_API_KEY=${AI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - REDIS_URL=redis://redis:6379
     depends_on:
-      - mongo
+      - redis
 
-  mongo:
-    image: mongo:6
+  redis:
+    image: redis:alpine
     volumes:
-      - mongo_data:/data/db
+      - redis_data:/data
 
 volumes:
-  mongo_data:
+  redis_data:
 ```
 
-### Docker Compose with Caddy Reverse Proxy
+### Production Setup with Caddy
 
-```yaml
-version: '3.8'
+Use the provided `docker-compose.yml` and `Caddyfile.external` for production deployment with Caddy reverse proxy.
 
-services:
-  app:
-    build: .
-    expose:
-      - "3000"
-    environment:
-      - MONGO_URI=mongodb://mongo:27017/subtitles
-      - OPENSUBTITLES_API_KEY=${OPENSUBTITLES_API_KEY}
-      - AI_API_KEY=${AI_API_KEY}
-    depends_on:
-      - mongo
-    networks:
-      - internal
-      - web
-
-  mongo:
-    image: mongo:6
-    volumes:
-      - mongo_data:/data/db
-    networks:
-      - internal
-
-  caddy:
-    image: caddy:2
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
-    networks:
-      - web
-
-networks:
-  internal:
-  web:
-
-volumes:
-  mongo_data:
-  caddy_data:
-  caddy_config:
-```
-
-### Caddyfile Configuration
+#### External Caddyfile Configuration
 
 ```caddyfile
-api.yourdomain.com {
-    reverse_proxy app:3000
-    tls your@email.com
-}
-```
-
-## API Documentation
-
-### Authentication
-
-All API requests require an API key passed in the header:
-
-```bash
-Authorization: Bearer your_api_key
-```
-
-### Endpoints
-
-#### Submit Translation Job
-
-```bash
-POST /api/v1/translate
-Content-Type: application/json
-
 {
-  "subtitleFile": "base64_encoded_file",
-  "sourceLanguage": "en",
-  "targetLanguage": "es"
+    email admin@yourdomain.com
+    tls {
+        dns cloudflare {$CLOUDFLARE_API_TOKEN}
+        resolvers 1.1.1.1
+    }
+}
+
+aitranslator.thepi.es {
+    redir / /configure 301
+
+    handle_path /configure {
+        reverse_proxy localhost:7000
+    }
+
+    reverse_proxy localhost:7000 {
+    }
 }
 ```
 
-#### Check Translation Status
+## Configuration Interface
 
-```bash
-GET /api/v1/status/:jobId
-```
+Access the configuration interface at:
+- Local development: http://localhost:7000/configure
+- Production: https://aitranslator.thepi.es/configure
 
-## Error Handling
+## Version History
 
-The API uses standard HTTP status codes:
+### v1.5.0
+- Added Caddy reverse proxy support with Cloudflare DNS
+- Improved production deployment configuration
+- Enhanced documentation
 
-- 200: Success
-- 400: Bad Request
-- 401: Unauthorized
-- 429: Too Many Requests
-- 500: Internal Server Error
+### v1.4.1
+- Initial public release
+- Google Gemini AI integration
+- Basic translation functionality
+- Redis caching implementation
 
 ## Contributing
 
@@ -192,4 +124,4 @@ The API uses standard HTTP status codes:
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

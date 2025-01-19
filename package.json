@@ -1,26 +1,28 @@
 {
   "name": "stremio-aitranslator",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Stremio addon for real-time subtitle translation using Google's Gemini AI",
   "main": "src/index.js",
   "type": "commonjs",
   "scripts": {
     "build": "DEBUG=stremio:* node esbuild.config.js",
     "start": "node dist/index.js",
-    "dev": "DEBUG=stremio:* nodemon --watch src src/index.js"
+    "dev": "DEBUG=stremio:* nodemon --watch src src/index.js",
+    "start:dev": "cross-env PORT=7002 node src/index.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
     "@google/generative-ai": "^0.2.0",
-    "debug": "^4.3.4",
-    "better-queue": "^3.8.12",
     "axios": "^1.6.7",
+    "better-queue": "^3.8.12",
     "cors": "^2.8.5",
+    "debug": "^4.3.4",
     "ejs": "^3.1.9",
+    "express": "^4.18.2",
     "ioredis": "^5.3.2",
     "stremio-addon-sdk": "^1.6.10"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "esbuild": "^0.20.1",
     "nodemon": "^3.1.0"
   },
