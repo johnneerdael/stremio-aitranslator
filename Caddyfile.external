@@ -15,4 +15,4 @@ aitranslator.thepi.es {
 
     reverse_proxy localhost:7000 {
     }
-} 
+}
