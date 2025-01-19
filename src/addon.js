@@ -1,15 +1,12 @@
 const { addonBuilder } = require('stremio-addon-sdk');
 const { translateSubtitles } = require('./translateProvider');
-const ConfigService = require('./services/config');
-const TranslationQueue = require('./services/queue');
-const CacheService = require('./services/cache');
-const DatabaseService = require('./services/database');
+const RedisService = require('./services/redis');
 
-let config, queue, cache, db;
+let redis;
 
 const manifest = {
     id: 'stremio-aitranslator',
-    version: '1.3.28',
+    version: '1.4.0',
     name: 'Auto Subtitle Translate from English to Dutch',
     description: 'Translates subtitles using Google Gemini Flash 1.5 Free Tier',
     types: ['movie', 'series'],
@@ -25,32 +22,33 @@ const manifest = {
 const builder = new addonBuilder(manifest);
 
 builder.defineSubtitlesHandler(async ({ type, id, videoHash }) => {
-    if (!config) config = await ConfigService.getInstance();
-    if (!queue) queue = await TranslationQueue.getInstance();
-    if (!cache) cache = await CacheService.getInstance();
-    if (!db) db = await DatabaseService.getInstance();
+    if (!redis) redis = await RedisService.getInstance();
 
     const cacheKey = `${type}-${id}-${videoHash}`;
-    const cached = await cache.get(cacheKey);
+    const cached = await redis.get(cacheKey);
     if (cached) return cached;
 
     try {
-        const result = await queue.add(async () => {
-            const subtitles = await translateSubtitles(type, id);
-            
-            // Store in cache with metadata
-            await cache.set(cacheKey, {
-                subtitles,
-                sourceLang: 'en',
-                targetLang: await config.get('translateTo'),
-                videoId: id,
-                originalText: JSON.stringify(subtitles)
-            });
-            
-            return subtitles;
-        });
+        // Check queue length to implement rate limiting
+        const queueLength = await redis.getQueueLength('translations');
+        if (queueLength > 5) {
+            throw new Error('Too many pending translations');
+        }
 
-        return result;
+        // Add to queue and process
+        await redis.addToQueue('translations', { type, id });
+        const subtitles = await translateSubtitles(type, id);
+        
+        // Store in cache with metadata
+        await redis.set(cacheKey, {
+            subtitles,
+            sourceLang: 'en',
+            targetLang: await redis.getConfig('translateTo'),
+            videoId: id,
+            originalText: JSON.stringify(subtitles)
+        });
+        
+        return subtitles;
     } catch (error) {
         console.error('Error in subtitles handler:', error);
         return { subtitles: [] };

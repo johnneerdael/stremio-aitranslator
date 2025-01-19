@@ -2,21 +2,8 @@ FROM node:20.11.0-slim AS base
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
-    python3-full \
-    python3-venv \
-    make \
-    g++ \
-    gcc \
-    git \
-    sqlite3 \
-    libsqlite3-dev \
-    && rm -rf /var/lib/apt/lists/* && \
-    python3 -m venv /opt/venv && \
-    . /opt/venv/bin/activate && \
-    /opt/venv/bin/pip install --no-cache-dir setuptools wheel
-
-# Add virtual environment to PATH
-ENV PATH="/opt/venv/bin:$PATH"
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -37,37 +24,17 @@ FROM base AS build
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install
 COPY . .
 
-# Set build configuration
-ENV CFLAGS="-O2"
-ENV CXXFLAGS="-O2"
-ENV npm_config_build_from_source=true
-ENV npm_config_sqlite=/usr
-ENV npm_config_sqlite_libname=sqlite3
-
-# Build sqlite3 and the project
+# Build the project
 RUN pnpm build
 
 # Production stage
 FROM node:20.11.0-slim AS production
 WORKDIR /app
 
-# Install runtime dependencies and setup Python virtual environment
+# Install runtime dependencies
 RUN apt-get update && apt-get install -y \
-    python3-full \
-    python3-venv \
-    make \
-    g++ \
-    gcc \
-    sqlite3 \
-    libsqlite3-dev \
     curl \
-    && rm -rf /var/lib/apt/lists/* && \
-    python3 -m venv /opt/venv && \
-    . /opt/venv/bin/activate && \
-    /opt/venv/bin/pip install --no-cache-dir setuptools wheel
-
-# Add virtual environment to PATH
-ENV PATH="/opt/venv/bin:$PATH"
+    && rm -rf /var/lib/apt/lists/*
 
 # Create necessary directories
 RUN mkdir -p dist/templates static/templates subtitles/dut langs data
@@ -78,9 +45,8 @@ COPY --from=build /app/package.json ./
 COPY --from=build /app/src/templates ./dist/templates
 COPY --from=build /app/src/templates ./static/templates
 
-# Install production dependencies and rebuild sqlite3
-RUN pnpm install --prod && \
-    npm rebuild sqlite3 --build-from-source
+# Install production dependencies
+RUN pnpm install --prod
 
 # Set permissions
 RUN chown -R node:node /app
