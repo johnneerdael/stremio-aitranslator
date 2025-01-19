@@ -46,6 +46,7 @@ COPY --from=build /app/package.json ./
 COPY --from=build /app/src/templates ./dist/templates
 COPY --from=build /app/src/templates ./static/templates
 COPY --from=build /app/src/assets ./static/assets
+COPY --from=build /app/langs ./langs
 
 # Install production dependencies
 RUN pnpm install --prod
