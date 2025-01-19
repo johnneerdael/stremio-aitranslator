@@ -37,7 +37,7 @@ const PORT = process.env.PORT || 7000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static('static'));
-app.use(express.static('src/assets'));
+app.use('/', express.static('static/assets'));
 
 // Set view engine
 app.engine('html', require('ejs').renderFile);

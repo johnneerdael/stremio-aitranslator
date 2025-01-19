@@ -38,13 +38,14 @@ RUN apt-get update && apt-get install -y \
     && corepack enable && corepack prepare pnpm@latest --activate
 
 # Create necessary directories
-RUN mkdir -p dist/templates static/templates subtitles/dut langs data
+RUN mkdir -p dist/templates static/templates static/assets subtitles/dut langs data
 
 # Copy built files and package files
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./
 COPY --from=build /app/src/templates ./dist/templates
 COPY --from=build /app/src/templates ./static/templates
+COPY --from=build /app/src/assets ./static/assets
 
 # Install production dependencies
 RUN pnpm install --prod
