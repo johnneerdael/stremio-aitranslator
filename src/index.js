@@ -28,6 +28,12 @@ const builder = new addonBuilder({
             required: true
         },
         {
+            key: 'opensubtitles_app',
+            title: 'OpenSubtitles App',
+            type: 'text',
+            required: true
+        },
+        {
             key: 'gemini_key',
             title: 'Gemini API Key',
             type: 'text',
@@ -58,7 +64,7 @@ const builder = new addonBuilder({
 });
 
 builder.defineSubtitlesHandler(async ({ type, id, extra, config: userConfig }) => {
-    if (!userConfig.opensubtitles_key || !userConfig.gemini_key || !userConfig.target_language) {
+    if (!userConfig.opensubtitles_key || !userConfig.opensubtitles_app || !userConfig.gemini_key || !userConfig.target_language) {
         logger.warn('Missing required configuration');
         return { 
             subtitles: [],
@@ -84,7 +90,7 @@ builder.defineSubtitlesHandler(async ({ type, id, extra, config: userConfig }) =
         }];
 
         // Configure services with user settings
-        opensubtitles.configure(userConfig.opensubtitles_key);
+        opensubtitles.configure(userConfig.opensubtitles_key, userConfig.opensubtitles_app);
         translator.configure(userConfig.gemini_key);
         
         // Start the subtitle fetching process
@@ -138,5 +144,5 @@ builder.defineSubtitlesHandler(async ({ type, id, extra, config: userConfig }) =
 
 serveHTTP(builder.getInterface(), { 
     port: config.server.port,
-    cacheMaxAge: 3600
+    host: config.server.host
 }); 
