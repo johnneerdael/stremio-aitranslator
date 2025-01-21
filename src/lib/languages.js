@@ -102,11 +102,14 @@ function getLanguageOptions() {
             const geminiCode = STREMIO_TO_GEMINI[stremioCode];
             return GEMINI_LANGUAGES[geminiCode] !== undefined;
         })
-        .map(([stremioCode]) => ({
-            title: GEMINI_LANGUAGES[STREMIO_TO_GEMINI[stremioCode]],
-            value: stremioCode
-        }))
-        .sort((a, b) => a.title.localeCompare(b.title));
+        .map(([stremioCode]) => {
+            const geminiCode = STREMIO_TO_GEMINI[stremioCode];
+            return {
+                name: GEMINI_LANGUAGES[geminiCode],
+                value: stremioCode
+            };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function getGeminiLanguageCode(stremioCode) {
