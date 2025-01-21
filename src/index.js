@@ -11,7 +11,6 @@ const builder = new addonBuilder({
     name: config.name,
     description: config.description,
     logo: config.logo,
-    background: config.background,
     resources: ['subtitles'],
     types: ['movie', 'series'],
     catalogs: [],
@@ -29,7 +28,7 @@ const builder = new addonBuilder({
         },
         {
             key: 'opensubtitles_app',
-            title: 'OpenSubtitles App',
+            title: 'OpenSubtitles App Name',
             type: 'text',
             required: true
         },
@@ -41,24 +40,10 @@ const builder = new addonBuilder({
         },
         {
             key: 'target_language',
-            title: 'Translate to',
+            title: 'Target Language',
             type: 'select',
             required: true,
             options: languages.getLanguageOptions()
-        },
-        {
-            key: 'cache_enabled',
-            title: 'Enable Translation Cache',
-            type: 'checkbox',
-            required: false,
-            default: true
-        },
-        {
-            key: 'cache_ttl',
-            title: 'Cache Duration (hours)',
-            type: 'number',
-            required: false,
-            default: 24
         }
     ]
 });
@@ -68,7 +53,7 @@ builder.defineSubtitlesHandler(async ({ type, id, extra, config: userConfig }) =
         logger.warn('Missing required configuration');
         return { 
             subtitles: [],
-            cacheMaxAge: 3600,
+            cacheMaxAge: 259200, // 72 hours
             staleError: 7200
         };
     }
@@ -128,7 +113,7 @@ builder.defineSubtitlesHandler(async ({ type, id, extra, config: userConfig }) =
 
         return { 
             subtitles,
-            cacheMaxAge: userConfig.cache_enabled ? (userConfig.cache_ttl || 24) * 3600 : 3600,
+            cacheMaxAge: 259200, // 72 hours
             staleRevalidate: 3600,
             staleError: 7200
         };
@@ -136,7 +121,7 @@ builder.defineSubtitlesHandler(async ({ type, id, extra, config: userConfig }) =
         logger.error('Error in subtitles handler:', error);
         return { 
             subtitles: [],
-            cacheMaxAge: 3600,
+            cacheMaxAge: 259200, // 72 hours
             staleError: 7200
         };
     }
