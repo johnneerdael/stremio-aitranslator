@@ -1,0 +1,7 @@
+fastapi
+aiohttp
+jinja2
+uvicorn
+pydantic
+opensubtitlescom
+google-generativeai

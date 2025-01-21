@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html class="sl-theme-dark">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta content="AI Subtitle Translator" property="og:title" />
+        <meta content="Translates subtitles using Google Gemini AI" property="og:description" />
+        <meta content="{{ base_url }}" property="og:url" />
+        <meta content="{{ base_url }}/assets/logo.png" property="og:image" />
+        <title>AI Subtitle Translator - Configuration</title>
+        <link rel="icon" type="image/png" href="{{ base_url }}/assets/logo.png">
+
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/themes/dark.css" />
+        <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/shoelace-autoloader.js"></script>
+
+        <style>
+            body {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                margin: 0;
+                background: url('{{ base_url }}/assets/wallpaper.png') no-repeat center center fixed;
+                background-size: cover;
+                font-family: system-ui, -apple-system, "Segoe UI", Roboto;
+            }
+
+            .header {
+                text-align: center;
+                margin-bottom: 20px;
+                color: #fff;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .header img {
+                width: 100px;
+                height: 100px;
+                margin-bottom: 10px;
+            }
+
+            .form-container {
+                background-color: rgba(37, 41, 44, 0.95);
+                padding: 2rem;
+                border-radius: 0.375rem;
+                box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+                width: 80vw;
+                max-width: 600px;
+                margin-bottom: 50px;
+                backdrop-filter: blur(10px);
+            }
+
+            .form-item {
+                margin-bottom: 1rem;
+            }
+
+            .centered-item {
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+                margin-top: 20px;
+            }
+
+            .version {
+                color: #6c757d;
+                font-size: 0.875rem;
+                margin-top: 10px;
+            }
+
+            .install-options {
+                margin-top: 20px;
+                padding: 15px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+            }
+
+            .install-option {
+                margin: 10px 0;
+            }
+
+            .install-option h3 {
+                color: #fff;
+                margin: 0 0 10px 0;
+            }
+
+            .button-group {
+                display: flex;
+                gap: 10px;
+                margin-top: 10px;
+            }
+
+            .url-display {
+                background: rgba(0, 0, 0, 0.2);
+                padding: 8px;
+                border-radius: 4px;
+                word-break: break-all;
+                margin: 10px 0;
+                font-family: monospace;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <img src="{{ base_url }}/assets/logo.png" alt="AI Subtitle Translator">
+            <h1>AI Subtitle Translator</h1>
+            <p>Configure your subtitle translation settings</p>
+            <span class="version">v{{ version }}</span>
+        </div>
+
+        <div class="form-container">
+            <div class="form-item">
+                <sl-select id="translateTo" label="Translate To" value="{{ config.lang }}">
+                    {% for lang in languages %}
+                        <sl-option value="{{ lang.code }}">{{ lang.name }}</sl-option>
+                    {% endfor %}
+                </sl-select>
+            </div>
+
+            <div class="form-item">
+                <sl-input id="geminiApiKey" type="password" label="Google Gemini API Key" value="{{ config.key }}" placeholder="Enter your API key"></sl-input>
+            </div>
+
+            <div class="form-item">
+                <sl-input id="osApiKey" type="password" label="OpenSubtitles API Key" value="{{ config.opensubtitles_key }}" placeholder="Enter your OpenSubtitles API key"></sl-input>
+            </div>
+
+            <div class="form-item">
+                <sl-input id="osAppName" type="text" label="OpenSubtitles App Name" value="{{ config.opensubtitles_app }}" placeholder="Enter your OpenSubtitles app name"></sl-input>
+            </div>
+
+            <div class="install-options">
+                <div class="install-option">
+                    <h3>Option 1: Direct Install</h3>
+                    <p>Click the button below to install the addon directly in Stremio:</p>
+                    <sl-button id="install" variant="primary">Install Addon</sl-button>
+                </div>
+
+                <div class="install-option">
+                    <h3>Option 2: Manual Install</h3>
+                    <p>Copy this URL and add it manually in Stremio:</p>
+                    <div id="manifestUrl" class="url-display"></div>
+                    <div class="button-group">
+                        <sl-button id="copyUrl" variant="default" size="small">
+                            <sl-icon slot="prefix" name="clipboard"></sl-icon>
+                            Copy URL
+                        </sl-button>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', async () => {
+                    await Promise.allSettled([
+                        customElements.whenDefined('sl-button'),
+                        customElements.whenDefined('sl-select'),
+                        customElements.whenDefined('sl-input'),
+                        customElements.whenDefined('sl-icon')
+                    ]);
+                });
+
+                function getSettings() {
+                    const key = document.getElementById('geminiApiKey').value;
+                    const lang = document.getElementById('translateTo').value;
+                    const opensubtitles_key = document.getElementById('osApiKey').value;
+                    const opensubtitles_app = document.getElementById('osAppName').value;
+                    
+                    if (!key || !lang || !opensubtitles_key || !opensubtitles_app) {
+                        alert('Please fill in all fields');
+                        return null;
+                    }
+                    
+                    return { key, lang, opensubtitles_key, opensubtitles_app };
+                }
+
+                function updateManifestUrl() {
+                    const settings = getSettings();
+                    if (!settings) return;
+                    
+                    const settingsString = btoa(JSON.stringify(settings))
+                        .replace(/\+/g, '-')
+                        .replace(/\//g, '_')
+                        .replace(/=+$/, '');
+                    
+                    const manifestUrl = `${window.location.protocol}//${window.location.host}/${settingsString}/manifest.json`;
+                    document.getElementById('manifestUrl').textContent = manifestUrl;
+                    return manifestUrl;
+                }
+
+                // Update manifest URL when any input changes
+                document.querySelectorAll('sl-input, sl-select').forEach(el => {
+                    el.addEventListener('sl-change', updateManifestUrl);
+                    el.addEventListener('sl-input', updateManifestUrl);
+                });
+
+                // Initial URL update
+                updateManifestUrl();
+
+                // Install button
+                document.getElementById('install').addEventListener('click', () => {
+                    const manifestUrl = updateManifestUrl();
+                    if (manifestUrl) {
+                        window.location.href = `stremio://${window.location.host}/${manifestUrl.split('/').pop()}`;
+                    }
+                });
+
+                // Copy URL button
+                document.getElementById('copyUrl').addEventListener('click', async () => {
+                    const manifestUrl = document.getElementById('manifestUrl').textContent;
+                    await navigator.clipboard.writeText(manifestUrl);
+                    
+                    const button = document.getElementById('copyUrl');
+                    button.innerHTML = '<sl-icon name="check-lg"></sl-icon> Copied!';
+                    setTimeout(() => {
+                        button.innerHTML = '<sl-icon slot="prefix" name="clipboard"></sl-icon> Copy URL';
+                    }, 2000);
+                });
+            </script>
+        </div>
+    </body>
+</html>
