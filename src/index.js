@@ -43,7 +43,10 @@ const builder = new addonBuilder({
             title: 'Target Language',
             type: 'select',
             required: true,
-            options: languages.getLanguageOptions()
+            options: languages.getLanguageOptions().map(opt => ({
+                title: opt.title,
+                value: opt.id
+            }))
         }
     ]
 });

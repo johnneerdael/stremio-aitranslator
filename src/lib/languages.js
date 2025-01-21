@@ -1,54 +1,41 @@
-// Gemini supported languages
-// Source: https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/text
+// Gemini Flash supported languages
+// Source: https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/text-flash
 const GEMINI_LANGUAGES = {
     'ar': 'Arabic',
-    'bn': 'Bengali',
     'bg': 'Bulgarian',
     'zh': 'Chinese (Simplified)',
     'zh-TW': 'Chinese (Traditional)',
-    'hr': 'Croatian',
     'cs': 'Czech',
     'da': 'Danish',
     'nl': 'Dutch',
     'en': 'English',
     'et': 'Estonian',
-    'fil': 'Filipino',
     'fi': 'Finnish',
     'fr': 'French',
     'de': 'German',
     'el': 'Greek',
-    'gu': 'Gujarati',
     'he': 'Hebrew',
     'hi': 'Hindi',
     'hu': 'Hungarian',
     'id': 'Indonesian',
     'it': 'Italian',
     'ja': 'Japanese',
-    'kn': 'Kannada',
     'ko': 'Korean',
     'lv': 'Latvian',
     'lt': 'Lithuanian',
-    'ms': 'Malay',
-    'ml': 'Malayalam',
-    'mr': 'Marathi',
     'no': 'Norwegian',
     'pl': 'Polish',
     'pt': 'Portuguese',
-    'pa': 'Punjabi',
     'ro': 'Romanian',
     'ru': 'Russian',
     'sr': 'Serbian',
     'sk': 'Slovak',
     'sl': 'Slovenian',
     'es': 'Spanish',
-    'sw': 'Swahili',
     'sv': 'Swedish',
-    'ta': 'Tamil',
-    'te': 'Telugu',
     'th': 'Thai',
     'tr': 'Turkish',
     'uk': 'Ukrainian',
-    'ur': 'Urdu',
     'vi': 'Vietnamese'
 };
 
@@ -56,7 +43,6 @@ const GEMINI_LANGUAGES = {
 const STREMIO_TO_GEMINI = {
     'ar-AR': 'ar',
     'bg-BG': 'bg',
-    'bn-BD': 'bn',
     'cs-CZ': 'cs',
     'da-DK': 'da',
     'de-DE': 'de',
@@ -68,7 +54,6 @@ const STREMIO_TO_GEMINI = {
     'fr-FR': 'fr',
     'he-IL': 'he',
     'hi-IN': 'hi',
-    'hr-HR': 'hr',
     'hu-HU': 'hu',
     'id-ID': 'id',
     'it-IT': 'it',
@@ -96,20 +81,17 @@ const STREMIO_TO_GEMINI = {
 };
 
 function getLanguageOptions() {
-    // Return only languages supported by both Stremio and Gemini
+    // Return only languages supported by both Stremio and Gemini Flash
     return Object.entries(STREMIO_TO_GEMINI)
         .filter(([stremioCode]) => {
             const geminiCode = STREMIO_TO_GEMINI[stremioCode];
             return GEMINI_LANGUAGES[geminiCode] !== undefined;
         })
-        .map(([stremioCode]) => {
-            const geminiCode = STREMIO_TO_GEMINI[stremioCode];
-            return {
-                name: GEMINI_LANGUAGES[geminiCode],
-                value: stremioCode
-            };
-        })
-        .sort((a, b) => a.name.localeCompare(b.name));
+        .map(([stremioCode]) => ({
+            title: GEMINI_LANGUAGES[STREMIO_TO_GEMINI[stremioCode]],
+            id: stremioCode
+        }))
+        .sort((a, b) => a.title.localeCompare(b.title));
 }
 
 function getGeminiLanguageCode(stremioCode) {
