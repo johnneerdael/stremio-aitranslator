@@ -1,10 +1,24 @@
-FROM python:3.9-slim
+FROM node:18-alpine
 
+# Create app directory
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install app dependencies
+COPY package*.json ./
+RUN npm ci --only=production
 
+# Copy app source
 COPY . .
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7000"]
+# Create cache and logs directories
+RUN mkdir -p cache logs && \
+    chown -R node:node /app
+
+# Switch to non-root user
+USER node
+
+# Expose port
+EXPOSE 7000
+
+# Start the application
+CMD ["npm", "start"]
