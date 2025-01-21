@@ -218,7 +218,7 @@ async def subtitles(
                     "lang": "eng",         # ISO 639-2 code
                     "url": None            # Null URL for embedded subtitles
                 })
-
+g
         if not config.opensubtitles_key:
             print("No OpenSubtitles API key configured")
             if not response_subtitles:
