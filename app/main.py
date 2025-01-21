@@ -293,8 +293,8 @@ async def subtitles(
             })
 
         # Return subtitles
-        if paths and len(paths) > 0:
-            subtitles = fetch_subtitles(imdbid, season, episode, len(paths), type, iso692)
+        if entries:
+            subtitles = fetch_subtitles(imdbid, season, episode, language="eng")
             return {"subtitles": subtitles}
         else:
             return {"subtitles": subtitles}
