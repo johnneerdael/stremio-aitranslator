@@ -88,10 +88,10 @@ function getLanguageOptions() {
             return GEMINI_LANGUAGES[geminiCode] !== undefined;
         })
         .map(([stremioCode]) => ({
-            title: GEMINI_LANGUAGES[STREMIO_TO_GEMINI[stremioCode]],
-            id: stremioCode
+            name: GEMINI_LANGUAGES[STREMIO_TO_GEMINI[stremioCode]],
+            value: stremioCode
         }))
-        .sort((a, b) => a.title.localeCompare(b.title));
+        .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function getGeminiLanguageCode(stremioCode) {

@@ -10,7 +10,8 @@ const builder = new addonBuilder({
     version: config.version,
     name: config.name,
     description: config.description,
-    logo: config.logo,
+    logo: 'https://yourdomain.com/assets/logo.png',
+    background: 'https://yourdomain.com/assets/wallpaper.png',
     resources: ['subtitles'],
     types: ['movie', 'series'],
     catalogs: [],
@@ -44,9 +45,10 @@ const builder = new addonBuilder({
             type: 'select',
             required: true,
             options: languages.getLanguageOptions().map(opt => ({
-                title: opt.title,
-                value: opt.id
-            }))
+                title: opt.name,
+                value: opt.value
+            })),
+            default: 'nl-NL'
         }
     ]
 });
@@ -73,7 +75,7 @@ builder.defineSubtitlesHandler(async ({ type, id, extra, config: userConfig }) =
         // Return loading subtitle while we fetch and translate
         const subtitles = [{
             id: 'loading',
-            url: `${config.logo.replace('logo.png', 'loading.srt')}`,
+            url: 'https://yourdomain.com/assets/loading.srt',
             lang: userConfig.target_language
         }];
 
