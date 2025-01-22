@@ -12,11 +12,10 @@ services:
       - PORT=7000
       - HOST=0.0.0.0
       - LOG_LEVEL=info
-      - CACHE_ENABLED=true
-      - CACHE_TTL=86400
     volumes:
       - ./logs:/app/logs
       - ./cache:/app/cache
+      - ./static:/app/static
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:7000/health"]
       interval: 30s

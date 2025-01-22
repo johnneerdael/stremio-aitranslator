@@ -1,8 +1,8 @@
-const { addonBuilder } = require('stremio-addon-sdk');
+const { addonBuilder, serveHTTP } = require('stremio-addon-sdk');
 const translator = require('./lib/translator');
 const opensubtitles = require('./lib/opensubtitles');
 const languages = require('./lib/languages');
-const logger = require('./lib/logger');
+const logger = require('./logger');
 
 const manifest = {
     id: 'org.stremio.aitranslator',
@@ -12,7 +12,39 @@ const manifest = {
     types: ['movie', 'series'],
     catalogs: [],
     resources: ['subtitles'],
-    idPrefixes: ['tt']
+    idPrefixes: ['tt'],
+    behaviorHints: {
+        configurable: true,
+        configurationRequired: true
+    },
+    config: [
+        {
+            key: 'opensubtitles_api_key',
+            title: 'OpenSubtitles API Key',
+            type: 'text',
+            required: true
+        },
+        {
+            key: 'opensubtitles_app',
+            title: 'OpenSubtitles App Name',
+            type: 'text',
+            required: true
+        },
+        {
+            key: 'gemini_api_key',
+            title: 'Gemini API Key',
+            type: 'text',
+            required: true
+        },
+        {
+            key: 'target_language',
+            title: 'Target Language',
+            type: 'select',
+            required: true,
+            options: languages.getLanguageOptions(),
+            default: 'nl-NL'
+        }
+    ]
 };
 
 const builder = new addonBuilder(manifest);
@@ -78,4 +110,16 @@ builder.defineSubtitlesHandler(async ({ type, id, season, episode }) => {
     }
 });
 
-module.exports = builder.getInterface(); 
+// Start the server
+serveHTTP(builder.getInterface(), {
+    port: process.env.PORT || 7000,
+    host: process.env.HOST || '0.0.0.0',
+    static: './static',
+    cache: {
+        max: 1000,
+        maxAge: 259200 * 1000 // 72 hours in milliseconds
+    },
+    cors: true
+});
+
+logger.info('Addon server starting...'); 
