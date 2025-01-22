@@ -1,138 +1,81 @@
-const { addonBuilder, serveHTTP } = require('stremio-addon-sdk');
-const config = require('./config/config');
-const languages = require('./lib/languages');
-const opensubtitles = require('./lib/opensubtitles');
+const { addonBuilder } = require('stremio-addon-sdk');
 const translator = require('./lib/translator');
+const opensubtitles = require('./lib/opensubtitles');
+const languages = require('./lib/languages');
 const logger = require('./lib/logger');
 
-const builder = new addonBuilder({
-    id: config.id,
-    version: config.version,
-    name: config.name,
-    description: config.description,
-    logo: 'https://yourdomain.com/assets/logo.png',
-    background: 'https://yourdomain.com/assets/wallpaper.png',
-    resources: ['subtitles'],
+const manifest = {
+    id: 'org.stremio.aitranslator',
+    version: '1.0.0',
+    name: 'AI Subtitle Translator',
+    description: 'Translates subtitles using Gemini AI',
     types: ['movie', 'series'],
     catalogs: [],
-    idPrefixes: ['tt'],
-    behaviorHints: {
-        configurable: true,
-        configurationRequired: true
-    },
-    config: [
-        {
-            key: 'opensubtitles_key',
-            title: 'OpenSubtitles API Key',
-            type: 'text',
-            required: true
-        },
-        {
-            key: 'opensubtitles_app',
-            title: 'OpenSubtitles App Name',
-            type: 'text',
-            required: true
-        },
-        {
-            key: 'gemini_key',
-            title: 'Gemini API Key',
-            type: 'text',
-            required: true
-        },
-        {
-            key: 'target_language',
-            title: 'Target Language',
-            type: 'select',
-            required: true,
-            options: languages.getLanguageOptions().map(opt => ({
-                title: opt.name,
-                value: opt.value
-            })),
-            default: 'nl-NL'
-        }
-    ]
-});
+    resources: ['subtitles'],
+    idPrefixes: ['tt']
+};
 
-builder.defineSubtitlesHandler(async ({ type, id, extra, config: userConfig }) => {
-    if (!userConfig.opensubtitles_key || !userConfig.opensubtitles_app || !userConfig.gemini_key || !userConfig.target_language) {
-        logger.warn('Missing required configuration');
-        return { 
-            subtitles: [],
-            cacheMaxAge: 259200, // 72 hours
-            staleError: 7200
-        };
-    }
+const builder = new addonBuilder(manifest);
 
+builder.defineSubtitlesHandler(async ({ type, id, season, episode }) => {
     try {
-        // Parse the video ID
-        let imdbId, season, episode;
-        if (type === 'series') {
-            [imdbId, season, episode] = id.split(':');
-        } else {
-            imdbId = id;
+        const config = await builder.getConfig();
+        if (!config?.opensubtitles_api_key || !config?.opensubtitles_app || !config?.target_language) {
+            throw new Error('Missing required configuration');
         }
 
-        // Return loading subtitle while we fetch and translate
-        const subtitles = [{
-            id: 'loading',
-            url: 'https://yourdomain.com/assets/loading.srt',
-            lang: userConfig.target_language
-        }];
+        // Configure clients
+        opensubtitles.configure(config.opensubtitles_api_key, config.opensubtitles_app);
+        translator.configure(config.gemini_api_key);
 
-        // Configure services with user settings
-        opensubtitles.configure(userConfig.opensubtitles_key, userConfig.opensubtitles_app);
-        translator.configure(userConfig.gemini_key);
-        
-        // Start the subtitle fetching process
-        const results = await opensubtitles.getSubtitles(type, imdbId, season, episode);
-        
-        if (results && results.length > 0) {
-            for (const sub of results) {
+        // Get subtitles from OpenSubtitles
+        const subtitles = await opensubtitles.getSubtitles(type, id, season, episode);
+        if (!subtitles.length) {
+            return { subtitles: [] };
+        }
+
+        // Process each subtitle
+        const translatedSubtitles = await Promise.all(
+            subtitles.map(async (sub) => {
                 try {
-                    // Download the subtitle content
-                    const downloadUrl = await opensubtitles.downloadSubtitle(sub.attributes.files[0].file_id);
-                    if (!downloadUrl) continue;
+                    const downloadLink = await opensubtitles.downloadSubtitle(sub.attributes.files[0].file_id);
+                    if (!downloadLink) return null;
 
-                    // Fetch the subtitle content
-                    const response = await fetch(downloadUrl);
+                    const response = await fetch(downloadLink);
                     const content = await response.text();
 
-                    // Translate the content
-                    const translatedContent = await translator.translateSubtitleContent(content, userConfig.target_language);
+                    const translatedPath = await translator.translateAndSave(
+                        type,
+                        config.target_language,
+                        id,
+                        content,
+                        season,
+                        episode
+                    );
 
-                    // Create a Blob with the translated content
-                    const blob = new Blob([translatedContent], { type: 'text/plain' });
-                    const blobUrl = URL.createObjectURL(blob);
-
-                    subtitles.push({
-                        id: `${sub.attributes.files[0].file_id}-${userConfig.target_language}`,
-                        url: blobUrl,
-                        lang: userConfig.target_language
-                    });
+                    return {
+                        id: `${sub.id}_translated`,
+                        url: translatedPath,
+                        lang: config.target_language,
+                        fps: sub.attributes.fps
+                    };
                 } catch (error) {
-                    logger.error('Error processing subtitle:', error);
-                    continue;
+                    logger.error(`Error processing subtitle: ${error.message}`);
+                    return null;
                 }
-            }
-        }
+            })
+        );
 
-        return { 
-            subtitles,
+        return {
+            subtitles: translatedSubtitles.filter(Boolean),
             cacheMaxAge: 259200, // 72 hours
-            staleRevalidate: 3600,
-            staleError: 7200
+            staleRevalidate: true,
+            staleError: true
         };
     } catch (error) {
-        logger.error('Error in subtitles handler:', error);
-        return { 
-            subtitles: [],
-            cacheMaxAge: 259200, // 72 hours
-            staleError: 7200
-        };
+        logger.error(`Subtitle handler error: ${error.message}`);
+        return { subtitles: [] };
     }
 });
 
-serveHTTP(builder.getInterface(), { 
-    port: config.server.port,
-    host: config.server.host
-}); 
+module.exports = builder.getInterface(); 

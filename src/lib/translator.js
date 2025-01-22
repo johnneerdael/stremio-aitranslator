@@ -1,5 +1,6 @@
 const axios = require('axios');
 const logger = require('./logger');
+const subtitleManager = require('./subtitleManager');
 
 class TranslatorService {
     constructor() {
@@ -25,7 +26,7 @@ class TranslatorService {
                                 },
                                 isSubtitle: {
                                     type: "boolean",
-                                    description: "Whether this is actual subtitle text (true) or metadata like timecodes (false)"
+                                    description: "Whether this is actual subtitle text (true) or metadata (false)"
                                 }
                             },
                             required: ["original", "translated", "isSubtitle"]
@@ -181,6 +182,26 @@ ${texts.join('\n')}`;
         // Implement rate limiting logic here if needed
         // For now, we're using simple delays between batches
         return true;
+    }
+
+    async translateAndSave(type, language, imdbId, subtitleContent, season = null, episode = null) {
+        try {
+            const count = await subtitleManager.getSubtitleCount(type, language, imdbId, season);
+            const translatedContent = await this.translateBatch(subtitleContent, language);
+            const filePath = await subtitleManager.saveSubtitle(
+                type, 
+                language, 
+                imdbId, 
+                translatedContent, 
+                count + 1, 
+                season, 
+                episode
+            );
+            return filePath;
+        } catch (error) {
+            logger.error('Error in translateAndSave:', error.message);
+            throw error;
+        }
     }
 }
 

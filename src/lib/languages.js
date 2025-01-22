@@ -81,14 +81,10 @@ const STREMIO_TO_GEMINI = {
 };
 
 function getLanguageOptions() {
-    // Return only languages supported by both Stremio and Gemini Flash
     return Object.entries(STREMIO_TO_GEMINI)
-        .filter(([stremioCode]) => {
-            const geminiCode = STREMIO_TO_GEMINI[stremioCode];
-            return GEMINI_LANGUAGES[geminiCode] !== undefined;
-        })
-        .map(([stremioCode]) => ({
-            name: GEMINI_LANGUAGES[STREMIO_TO_GEMINI[stremioCode]],
+        .filter(([stremioCode]) => GEMINI_LANGUAGES[STREMIO_TO_GEMINI[stremioCode]])
+        .map(([stremioCode, geminiCode]) => ({
+            name: GEMINI_LANGUAGES[geminiCode],
             value: stremioCode
         }))
         .sort((a, b) => a.name.localeCompare(b.name));
