@@ -2,7 +2,8 @@ const { addonBuilder, serveHTTP } = require('stremio-addon-sdk');
 const translator = require('./lib/translator');
 const opensubtitles = require('./lib/opensubtitles');
 const languages = require('./lib/languages');
-const logger = require('./logger');
+const logger = require('./lib/logger');
+const path = require('path');
 
 const manifest = {
     id: 'org.stremio.aitranslator',
@@ -13,6 +14,8 @@ const manifest = {
     catalogs: [],
     resources: ['subtitles'],
     idPrefixes: ['tt'],
+    logo: 'http://127.0.0.1:7000/logo.png',
+    background: 'http://127.0.0.1:7000/wallpaper.png',
     behaviorHints: {
         configurable: true,
         configurationRequired: true
@@ -56,6 +59,13 @@ builder.defineSubtitlesHandler(async ({ type, id, season, episode }) => {
             throw new Error('Missing required configuration');
         }
 
+        // Return loading subtitle immediately
+        const loadingSubtitle = {
+            id: 'loading',
+            url: 'http://127.0.0.1:7000/loading.srt',
+            lang: config.target_language
+        };
+
         // Configure clients
         opensubtitles.configure(config.opensubtitles_api_key, config.opensubtitles_app);
         translator.configure(config.gemini_api_key);
@@ -63,7 +73,7 @@ builder.defineSubtitlesHandler(async ({ type, id, season, episode }) => {
         // Get subtitles from OpenSubtitles
         const subtitles = await opensubtitles.getSubtitles(type, id, season, episode);
         if (!subtitles.length) {
-            return { subtitles: [] };
+            return { subtitles: [loadingSubtitle] };
         }
 
         // Process each subtitle
@@ -87,7 +97,7 @@ builder.defineSubtitlesHandler(async ({ type, id, season, episode }) => {
 
                     return {
                         id: `${sub.id}_translated`,
-                        url: translatedPath,
+                        url: `http://127.0.0.1:7000/${translatedPath}`,
                         lang: config.target_language,
                         fps: sub.attributes.fps
                     };
@@ -98,8 +108,9 @@ builder.defineSubtitlesHandler(async ({ type, id, season, episode }) => {
             })
         );
 
+        const validSubtitles = translatedSubtitles.filter(Boolean);
         return {
-            subtitles: translatedSubtitles.filter(Boolean),
+            subtitles: validSubtitles.length ? validSubtitles : [loadingSubtitle],
             cacheMaxAge: 259200, // 72 hours
             staleRevalidate: true,
             staleError: true
@@ -114,7 +125,7 @@ builder.defineSubtitlesHandler(async ({ type, id, season, episode }) => {
 serveHTTP(builder.getInterface(), {
     port: process.env.PORT || 7000,
     host: process.env.HOST || '0.0.0.0',
-    static: './static',
+    static: path.join(__dirname, '../static'),
     cache: {
         max: 1000,
         maxAge: 259200 * 1000 // 72 hours in milliseconds
