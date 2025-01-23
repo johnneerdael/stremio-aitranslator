@@ -39,14 +39,13 @@ class TranslatorService {
     configure(apiKey) {
         const genAI = new GoogleGenerativeAI(apiKey);
         this.model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
-            tools: {
-                functionDeclarations: this.functionDeclarations
-            },
+            model: "gemini-1.5-flash-001", // Use specific version for stability
             generationConfig: {
-                temperature: 0.1,
+                temperature: 0.1, // Lower temperature for more consistent translations
                 topP: 0.8,
-                topK: 40
+                topK: 40,
+                maxOutputTokens: 8192,
+                stopSequences: ["</s>"]
             }
         });
     }
@@ -113,22 +112,10 @@ class TranslatorService {
 
     async translateBatch(texts, targetLang, isBulk = false) {
         try {
-            if (!this.client) {
-                throw new Error('Translator not configured. Call configure() first.');
-            }
-
-            // Validate SRT format
-            const { isValid, error } = this.validateSrtFormat(texts.join('\n'));
-            if (!isValid) {
-                throw new Error(`Invalid SRT format: ${error}`);
-            }
-
             // Check cache first
             const cacheKey = `${texts.join('\n')}_${targetLang}`;
             const cachedResult = await this.getCachedTranslation(cacheKey);
-            if (cachedResult) {
-                return cachedResult;
-            }
+            if (cachedResult) return cachedResult;
 
             // Process formatting before translation
             const formattingMap = new Map();
@@ -138,35 +125,34 @@ class TranslatorService {
                 return cleanText;
             });
 
-            const prompt = `Translate the following subtitle lines to ${targetLang}. 
-Preserve exact timing and formatting.
-For each line, determine if it's actual subtitle text or metadata (like timecodes or numbers).
-Maintain line breaks exactly as in the original.
-${isBulk ? 'This is a bulk translation request, prioritize throughput over latency.' : 'This is a priority batch, optimize for quick response.'}
+            const prompt = {
+                text: `Translate the following SRT subtitle lines to ${targetLang}.
+Rules:
+1. Preserve exact timing and sequence numbers
+2. Preserve all HTML-style formatting tags (like <i>, <b>)
+3. Keep line breaks exactly as in original
+4. Do not translate numbers or timecodes
+5. Maintain subtitle length to fit on screen (similar length to source)
 
-Input lines:
-${processedTexts.join('\n')}`;
+Input subtitles:
+${processedTexts.join('\n')}`
+            };
 
             const result = await this.model.generateContent([prompt]);
             const response = await result.response;
-            const functionCall = response.candidates[0]?.content?.parts[0]?.functionCall;
-            if (!functionCall || functionCall.name !== "translateSubtitles") {
-                throw new Error('Invalid translation response format');
-            }
 
-            // Cache successful translations
-            const translations = functionCall.args.translations;
-            
-            // Restore formatting
-            const restoredTranslations = translations.map((trans, i) => {
+            // Validate and restore formatting
+            const translatedLines = response.text().split('\n');
+            const processedLines = translatedLines.map((line, i) => {
                 if (formattingMap.has(i)) {
-                    trans.translated = this.restoreFormatting(trans.translated, formattingMap.get(i));
+                    return this.restoreFormatting(line, formattingMap.get(i));
                 }
-                return trans;
+                return line;
             });
 
-            await this.cacheTranslation(cacheKey, restoredTranslations);
-            return restoredTranslations;
+            // Cache successful translations
+            await this.cacheTranslation(cacheKey, processedLines);
+            return processedLines;
         } catch (error) {
             logger.error('Translation error:', error.message);
             return texts.map(text => ({
@@ -219,25 +205,44 @@ ${processedTexts.join('\n')}`;
         return translatedLines.slice(0, initialBatches * initialBatchSize).join('\n');
     }
 
-    async processBulkTranslations(lines, targetLang, batchSize, translatedLines, startIndex) {
+    async processBulkTranslations(lines, targetLang, translatedLines, startIndex) {
         if (this.isProcessingBulk) return;
         this.isProcessingBulk = true;
 
         try {
-            for (let i = 0; i < lines.length; i += batchSize) {
-                const batch = lines.slice(i, i + batchSize);
-                const translations = await this.translateBatch(batch, targetLang, true);
-                
-                translations.forEach((translation, index) => {
-                    const lineIndex = startIndex + i + index;
-                    translatedLines[lineIndex] = translation.isSubtitle ? translation.translated : batch[index];
-                    this.translationCache.set(`${batch[index]}_${targetLang}`, translation.translated);
-                });
+            let currentBatch = [];
+            let currentTokens = 0;
+            const MAX_TOKENS_PER_BATCH = 8000; // Safe limit for Gemini Flash
 
-                // Small delay between bulk batches
-                if (i + batchSize < lines.length) {
+            for (let i = 0; i < lines.length; i++) {
+                const lineTokens = await this.estimateBatchSize([lines[i]]);
+                
+                if (currentTokens + lineTokens > MAX_TOKENS_PER_BATCH) {
+                    // Process current batch
+                    const translations = await this.translateBatch(currentBatch, targetLang, true);
+                    translations.forEach((translation, index) => {
+                        const lineIndex = startIndex + i - currentBatch.length + index;
+                        translatedLines[lineIndex] = translation;
+                    });
+                    
+                    currentBatch = [];
+                    currentTokens = 0;
+                    
+                    // Add delay between batches
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
+                
+                currentBatch.push(lines[i]);
+                currentTokens += lineTokens;
+            }
+
+            // Process final batch
+            if (currentBatch.length > 0) {
+                const translations = await this.translateBatch(currentBatch, targetLang, true);
+                translations.forEach((translation, index) => {
+                    const lineIndex = startIndex + lines.length - currentBatch.length + index;
+                    translatedLines[lineIndex] = translation;
+                });
             }
         } catch (error) {
             logger.error('Bulk translation error:', error);
@@ -251,9 +256,14 @@ ${processedTexts.join('\n')}`;
         return this.translationCache.get(`${text}_${targetLang}`);
     }
 
-    estimateTokens(text) {
-        // Rough estimation: 1 token ≈ 4 characters
-        return Math.ceil(text.length / 4);
+    async estimateBatchSize(texts) {
+        try {
+            const result = await this.model.countTokens(texts.join('\n'));
+            return result.totalTokens;
+        } catch (error) {
+            // Fallback to rough estimation
+            return Math.ceil(texts.join('\n').length / 4);
+        }
     }
 
     async checkRateLimits() {
