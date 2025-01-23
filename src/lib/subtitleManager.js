@@ -5,6 +5,7 @@ const logger = require('./logger');
 class SubtitleManager {
     constructor() {
         this.baseDir = 'subtitles';
+        this.inProgressTranslations = new Map();
     }
 
     async ensureDirectoryExists(type, language, imdbId, season = null) {
@@ -39,7 +40,11 @@ class SubtitleManager {
         try {
             await this.ensureDirectoryExists(type, language, imdbId, season);
             const filePath = this.getSubtitlePath(type, language, imdbId, count, season, episode);
-            await fs.writeFile(filePath, content, 'utf8');
+            
+            // Save content with UTF-8 encoding and BOM for compatibility
+            const contentWithBOM = '\ufeff' + content;
+            await fs.writeFile(filePath, contentWithBOM, 'utf8');
+            
             logger.info(`Subtitle saved: ${filePath}`);
             return filePath;
         } catch (error) {
