@@ -1,13 +1,13 @@
 FROM node:18-alpine
 
 # Add tini for proper process management
-RUN apk add --no-cache tini
+RUN apk add --no-cache tini wget
 
 WORKDIR /app
 
 # Install dependencies first (better layer caching)
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 # Create required directories
 RUN mkdir -p /app/static /app/subtitles /app/logs && \
