@@ -13,8 +13,15 @@ The subtitles will appear automatically when ready.
 If this message persists, please check:
 1. Your OpenSubtitles credentials
 2. Your internet connection
+3. Server status
 
 4
 00:00:15,000 --> 00:00:20,000
 Still loading...
-Thank you for your patience. 
+Thank you for your patience.
+We're working hard to deliver your subtitles.
+
+5
+00:00:20,000 --> 00:00:25,000
+Tip: Ensure you're using the latest version
+of the AI Translator for best performance
