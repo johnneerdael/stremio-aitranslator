@@ -11,11 +11,14 @@ RUN npm install --omit=dev
 COPY . .
 
 # Create cache and logs directories
-RUN mkdir -p cache logs && \
+RUN mkdir -p cache logs static && \
     chown -R node:node /app
 
 # Switch to non-root user
 USER node
+
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD wget --spider http://localhost:7000/health || exit 1
 
 # Expose port
 EXPOSE 7000

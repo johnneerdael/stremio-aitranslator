@@ -1,4 +1,5 @@
 const { addonBuilder, serveHTTP } = require('stremio-addon-sdk');
+const fs = require('fs');
 const translator = require('./lib/translator');
 const opensubtitles = require('./lib/opensubtitles');
 const languages = require('./lib/languages');
@@ -125,7 +126,7 @@ builder.defineSubtitlesHandler(async ({ type, id, season, episode }) => {
 serveHTTP(builder.getInterface(), {
     port: process.env.PORT || 7000,
     host: process.env.HOST || '0.0.0.0',
-    static: path.join(__dirname, '../../static'),
+    static: '/app/static',
     cache: {
         max: 1000,
         maxAge: 259200 * 1000 // 72 hours in milliseconds
@@ -134,3 +135,8 @@ serveHTTP(builder.getInterface(), {
 });
 
 logger.info('Addon server starting...');
+
+// Verify static directory exists
+fs.access('/app/static', fs.constants.R_OK, (err) => {
+    if (err) logger.error('Static directory access error:', err);
+});
