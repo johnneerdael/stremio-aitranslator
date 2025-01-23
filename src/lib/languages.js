@@ -39,45 +39,44 @@ const GEMINI_LANGUAGES = {
     'vi': 'Vietnamese'
 };
 
-// Stremio language codes mapping
+// Stremio language codes mapping using ISO 639-2
 const STREMIO_TO_GEMINI = {
-    'ar-AR': 'ar',
-    'bg-BG': 'bg',
-    'cs-CZ': 'cs',
-    'da-DK': 'da',
-    'de-DE': 'de',
-    'el-GR': 'el',
-    'en-US': 'en',
-    'es-ES': 'es',
-    'et-EE': 'et',
-    'fi-FI': 'fi',
-    'fr-FR': 'fr',
-    'he-IL': 'he',
-    'hi-IN': 'hi',
-    'hu-HU': 'hu',
-    'id-ID': 'id',
-    'it-IT': 'it',
-    'ja-JP': 'ja',
-    'ko-KR': 'ko',
-    'lt-LT': 'lt',
-    'lv-LV': 'lv',
-    'nl-NL': 'nl',
-    'no-NO': 'no',
-    'pl-PL': 'pl',
-    'pt-BR': 'pt',
-    'pt-PT': 'pt',
-    'ro-RO': 'ro',
-    'ru-RU': 'ru',
-    'sk-SK': 'sk',
-    'sl-SI': 'sl',
-    'sr-RS': 'sr',
-    'sv-SE': 'sv',
-    'th-TH': 'th',
-    'tr-TR': 'tr',
-    'uk-UA': 'uk',
-    'vi-VN': 'vi',
-    'zh-CN': 'zh',
-    'zh-TW': 'zh-TW'
+    'ara': 'ar', // Arabic
+    'bul': 'bg', // Bulgarian
+    'zho': 'zh', // Chinese (Simplified)
+    'cht': 'zh-TW', // Chinese (Traditional)
+    'ces': 'cs', // Czech
+    'dan': 'da', // Danish
+    'nld': 'nl', // Dutch
+    'eng': 'en', // English
+    'est': 'et', // Estonian
+    'fin': 'fi', // Finnish
+    'fra': 'fr', // French
+    'deu': 'de', // German
+    'ell': 'el', // Greek
+    'heb': 'he', // Hebrew
+    'hin': 'hi', // Hindi
+    'hun': 'hu', // Hungarian
+    'ind': 'id', // Indonesian
+    'ita': 'it', // Italian
+    'jpn': 'ja', // Japanese
+    'kor': 'ko', // Korean
+    'lav': 'lv', // Latvian
+    'lit': 'lt', // Lithuanian
+    'nor': 'no', // Norwegian
+    'pol': 'pl', // Polish
+    'por': 'pt', // Portuguese
+    'ron': 'ro', // Romanian
+    'rus': 'ru', // Russian
+    'srp': 'sr', // Serbian
+    'slk': 'sk', // Slovak
+    'slv': 'sl', // Slovenian
+    'spa': 'es', // Spanish
+    'swe': 'sv', // Swedish
+    'tha': 'th', // Thai
+    'tur': 'tr', // Turkish
+    'ukr': 'uk', // Ukrainian
+    'vie': 'vi'  // Vietnamese
 };
 
 function getLanguageOptions() {

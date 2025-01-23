@@ -46,7 +46,7 @@ const manifest = {
             type: 'select',
             required: true,
             options: languages.getLanguageOptions(),
-            default: 'nl-NL'
+            default: 'nld'
         }
     ]
 };
