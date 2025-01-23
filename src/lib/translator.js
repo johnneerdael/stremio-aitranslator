@@ -1,11 +1,11 @@
 const axios = require('axios');
 const logger = require('./logger');
 const subtitleManager = require('./subtitleManager');
-const { GoogleAICacheManager } = require('@google/generative-ai/server');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 class TranslatorService {
     constructor() {
-        this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash';
+        this.model = null;
         this.functionDeclarations = [{
             name: "translateSubtitles",
             description: "Translates subtitle content while preserving formatting and timing",
@@ -30,45 +30,38 @@ class TranslatorService {
             }
         }];
         
-        // Translation state with improved caching
+        // Simple in-memory cache
         this.translationCache = new Map();
         this.pendingTranslations = new Map();
         this.isProcessingBulk = false;
-        this.cacheManager = null;
     }
 
     configure(apiKey) {
-        this.client = axios.create({
-            baseURL: this.baseUrl,
-            headers: {
-                'Content-Type': 'application/json',
-                'x-goog-api-key': apiKey
+        const genAI = new GoogleGenerativeAI(apiKey);
+        this.model = genAI.getGenerativeModel({
+            model: "gemini-1.5-flash",
+            tools: {
+                functionDeclarations: this.functionDeclarations
+            },
+            generationConfig: {
+                temperature: 0.1,
+                topP: 0.8,
+                topK: 40
             }
         });
-        this.cacheManager = new GoogleAICacheManager(apiKey);
     }
 
     async getCachedTranslation(cacheKey) {
-        try {
-            const cache = await this.cacheManager.get(cacheKey);
-            return cache?.content;
-        } catch (error) {
-            logger.warn('Cache retrieval error:', error.message);
-            return null;
-        }
+        return this.translationCache.get(cacheKey);
     }
 
     async cacheTranslation(cacheKey, translations) {
-        try {
-            const ttlSeconds = 259200; // 72 hours
-            await this.cacheManager.create({
-                key: cacheKey,
-                content: translations,
-                ttlSeconds
-            });
-        } catch (error) {
-            logger.warn('Cache storage error:', error.message);
-        }
+        this.translationCache.set(cacheKey, translations);
+        
+        // Implement cache expiration after 72 hours
+        setTimeout(() => {
+            this.translationCache.delete(cacheKey);
+        }, 259200000); // 72 hours in milliseconds
     }
 
     validateSrtFormat(text) {
@@ -154,29 +147,9 @@ ${isBulk ? 'This is a bulk translation request, prioritize throughput over laten
 Input lines:
 ${processedTexts.join('\n')}`;
 
-            const response = await this.client.post('/generateContent', {
-                contents: [{
-                    parts: [{
-                        text: prompt
-                    }]
-                }],
-                tools: {
-                    functionDeclarations: this.functionDeclarations
-                },
-                generationConfig: {
-                    temperature: 0.1, // Lower temperature for more consistent translations
-                    topP: 0.8,
-                    topK: 40
-                },
-                toolConfig: {
-                    functionCallConfig: {
-                        mode: "ANY",
-                        allowedFunctionNames: ["translateSubtitles"]
-                    }
-                }
-            });
-
-            const functionCall = response.data.candidates[0]?.content?.parts[0]?.functionCall;
+            const result = await this.model.generateContent([prompt]);
+            const response = await result.response;
+            const functionCall = response.candidates[0]?.content?.parts[0]?.functionCall;
             if (!functionCall || functionCall.name !== "translateSubtitles") {
                 throw new Error('Invalid translation response format');
             }
