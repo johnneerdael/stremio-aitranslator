@@ -129,40 +129,39 @@ builder.defineSubtitlesHandler(async ({ type, id, season, episode }) => {
     }
 });
 
-// Ensure required directories exist
-const staticDir = path.join(__dirname, '..', 'static');
+// Use relative path for static directory
+const staticDir = 'static';
 const subtitlesDir = path.join(__dirname, '..', 'subtitles');
 
 try {
-    // Ensure static directory exists
-    if (!fs.existsSync(staticDir)) {
-        fs.mkdirSync(staticDir, { recursive: true });
-        logger.info('Created static directory');
-    }
-    
     // Ensure subtitles directory exists
     if (!fs.existsSync(subtitlesDir)) {
         fs.mkdirSync(subtitlesDir, { recursive: true });
         logger.info('Created subtitles directory');
     }
 
-    // Verify static files exist
+    // Verify static files exist (using absolute path for checking)
+    const absoluteStaticDir = path.join(__dirname, '..', staticDir);
     const requiredFiles = ['loading.srt', 'logo.png', 'wallpaper.png'];
     for (const file of requiredFiles) {
-        const filePath = path.join(staticDir, file);
+        const filePath = path.join(absoluteStaticDir, file);
         if (!fs.existsSync(filePath)) {
-            logger.error(`Missing required static file: ${file}`);
+            logger.error(`Missing required static file: ${filePath}`);
+            throw new Error(`Missing required static file: ${file}`);
+        } else {
+            logger.info(`Found static file: ${filePath}`);
         }
     }
 } catch (error) {
     logger.error('Error setting up directories:', error);
+    process.exit(1);
 }
 
 // Start the server
 serveHTTP(builder.getInterface(), {
     port: process.env.PORT || 7000,
     host: process.env.HOST || '0.0.0.0',
-    static: staticDir,
+    static: staticDir, // Use relative path here
     cache: {
         max: 1000,
         maxAge: 259200 * 1000 // 72 hours in milliseconds
