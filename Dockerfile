@@ -7,17 +7,15 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Create required directories first
-RUN mkdir -p /app/static /app/subtitles
+# Create required directories with proper permissions
+RUN mkdir -p /app/static /app/subtitles && \
+    chown -R node:node /app
 
-# Copy static files specifically
-COPY static/* /app/static/
+# Copy static files first
+COPY --chown=node:node static/* /app/static/
 
 # Copy remaining app source
-COPY . .
-
-# Set permissions
-RUN chown -R node:node /app
+COPY --chown=node:node . .
 
 # Switch to non-root user
 USER node

@@ -129,11 +129,40 @@ builder.defineSubtitlesHandler(async ({ type, id, season, episode }) => {
     }
 });
 
+// Ensure required directories exist
+const staticDir = path.join(__dirname, '..', 'static');
+const subtitlesDir = path.join(__dirname, '..', 'subtitles');
+
+try {
+    // Ensure static directory exists
+    if (!fs.existsSync(staticDir)) {
+        fs.mkdirSync(staticDir, { recursive: true });
+        logger.info('Created static directory');
+    }
+    
+    // Ensure subtitles directory exists
+    if (!fs.existsSync(subtitlesDir)) {
+        fs.mkdirSync(subtitlesDir, { recursive: true });
+        logger.info('Created subtitles directory');
+    }
+
+    // Verify static files exist
+    const requiredFiles = ['loading.srt', 'logo.png', 'wallpaper.png'];
+    for (const file of requiredFiles) {
+        const filePath = path.join(staticDir, file);
+        if (!fs.existsSync(filePath)) {
+            logger.error(`Missing required static file: ${file}`);
+        }
+    }
+} catch (error) {
+    logger.error('Error setting up directories:', error);
+}
+
 // Start the server
 serveHTTP(builder.getInterface(), {
     port: process.env.PORT || 7000,
     host: process.env.HOST || '0.0.0.0',
-    static: path.join(__dirname, '..', 'static'),
+    static: staticDir,
     cache: {
         max: 1000,
         maxAge: 259200 * 1000 // 72 hours in milliseconds
@@ -142,8 +171,3 @@ serveHTTP(builder.getInterface(), {
 });
 
 logger.info('Addon server starting...');
-
-// Verify static directory exists
-fs.access('/app/static', fs.constants.R_OK, (err) => {
-    if (err) logger.error('Static directory access error:', err);
-});
