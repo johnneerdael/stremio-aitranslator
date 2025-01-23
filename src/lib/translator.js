@@ -1,6 +1,7 @@
 const axios = require('axios');
 const logger = require('./logger');
 const subtitleManager = require('./subtitleManager');
+const { GoogleAICacheManager } = require('@google/generative-ai/server');
 
 class TranslatorService {
     constructor() {
@@ -16,18 +17,10 @@ class TranslatorService {
                         items: {
                             type: "object",
                             properties: {
-                                original: {
-                                    type: "string",
-                                    description: "Original text line"
-                                },
-                                translated: {
-                                    type: "string",
-                                    description: "Translated text line"
-                                },
-                                isSubtitle: {
-                                    type: "boolean",
-                                    description: "Whether this is actual subtitle text (true) or metadata (false)"
-                                }
+                                original: { type: "string", description: "Original text line" },
+                                translated: { type: "string", description: "Translated text line" },
+                                isSubtitle: { type: "boolean", description: "Whether this is actual subtitle text (true) or metadata (false)" },
+                                timing: { type: "string", description: "Timing information if present" }
                             },
                             required: ["original", "translated", "isSubtitle"]
                         }
@@ -37,10 +30,11 @@ class TranslatorService {
             }
         }];
         
-        // Translation state
+        // Translation state with improved caching
         this.translationCache = new Map();
         this.pendingTranslations = new Map();
         this.isProcessingBulk = false;
+        this.cacheManager = null;
     }
 
     configure(apiKey) {
@@ -51,6 +45,30 @@ class TranslatorService {
                 'x-goog-api-key': apiKey
             }
         });
+        this.cacheManager = new GoogleAICacheManager(apiKey);
+    }
+
+    async getCachedTranslation(cacheKey) {
+        try {
+            const cache = await this.cacheManager.get(cacheKey);
+            return cache?.content;
+        } catch (error) {
+            logger.warn('Cache retrieval error:', error.message);
+            return null;
+        }
+    }
+
+    async cacheTranslation(cacheKey, translations) {
+        try {
+            const ttlSeconds = 259200; // 72 hours
+            await this.cacheManager.create({
+                key: cacheKey,
+                content: translations,
+                ttlSeconds
+            });
+        } catch (error) {
+            logger.warn('Cache storage error:', error.message);
+        }
     }
 
     async translateBatch(texts, targetLang, isBulk = false) {
@@ -59,7 +77,15 @@ class TranslatorService {
                 throw new Error('Translator not configured. Call configure() first.');
             }
 
+            // Check cache first
+            const cacheKey = `${texts.join('\n')}_${targetLang}`;
+            const cachedResult = await this.getCachedTranslation(cacheKey);
+            if (cachedResult) {
+                return cachedResult;
+            }
+
             const prompt = `Translate the following subtitle lines to ${targetLang}. 
+Preserve exact timing and formatting.
 For each line, determine if it's actual subtitle text or metadata (like timecodes or numbers).
 ${isBulk ? 'This is a bulk translation request, prioritize throughput over latency.' : 'This is a priority batch, optimize for quick response.'}
 
@@ -75,6 +101,11 @@ ${texts.join('\n')}`;
                 tools: {
                     functionDeclarations: this.functionDeclarations
                 },
+                generationConfig: {
+                    temperature: 0.1, // Lower temperature for more consistent translations
+                    topP: 0.8,
+                    topK: 40
+                },
                 toolConfig: {
                     functionCallConfig: {
                         mode: "ANY",
@@ -88,7 +119,11 @@ ${texts.join('\n')}`;
                 throw new Error('Invalid translation response format');
             }
 
-            return functionCall.args.translations;
+            // Cache successful translations
+            const translations = functionCall.args.translations;
+            await this.cacheTranslation(cacheKey, translations);
+
+            return translations;
         } catch (error) {
             logger.error('Translation error:', error.message);
             return texts.map(text => ({
@@ -104,9 +139,9 @@ ${texts.join('\n')}`;
         const translatedLines = new Array(lines.length);
         
         // Quick initial translation of first few batches
-        const initialBatchSize = 5;
+        const initialBatchSize = 10;
         const initialBatches = 3;
-        const bulkBatchSize = 50; // Larger batches for bulk processing
+        const bulkBatchSize = 100;
 
         // Process initial batches quickly
         for (let i = 0; i < Math.min(initialBatches * initialBatchSize, lines.length); i += initialBatchSize) {
@@ -158,7 +193,7 @@ ${texts.join('\n')}`;
 
                 // Small delay between bulk batches
                 if (i + batchSize < lines.length) {
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
             }
         } catch (error) {
