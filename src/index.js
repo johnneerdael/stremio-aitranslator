@@ -98,7 +98,7 @@ builder.defineSubtitlesHandler(async ({ type, id, season, episode }) => {
 
                     return {
                         id: `${sub.id}_translated`,
-                        url: `/subtitles/${translatedPath}`,
+                        url: translatedPath,
                         lang: config.target_language,
                         fps: sub.attributes.fps
                     };
@@ -110,15 +110,22 @@ builder.defineSubtitlesHandler(async ({ type, id, season, episode }) => {
         );
 
         const validSubtitles = translatedSubtitles.filter(Boolean);
+        
+        if (!validSubtitles.length) {
+            logger.warn(`No valid subtitles found for ${type} ${id}`);
+            return { subtitles: [loadingSubtitle] };
+        }
+
         return {
-            subtitles: validSubtitles.length ? validSubtitles : [loadingSubtitle],
+            subtitles: validSubtitles,
             cacheMaxAge: 259200, // 72 hours
             staleRevalidate: true,
             staleError: true
         };
     } catch (error) {
         logger.error(`Subtitle handler error: ${error.message}`);
-        return { subtitles: [] };
+        logger.warn(`Subtitle handler error: ${error.message}`);
+        return { subtitles: [loadingSubtitle] };
     }
 });
 
@@ -126,7 +133,7 @@ builder.defineSubtitlesHandler(async ({ type, id, season, episode }) => {
 serveHTTP(builder.getInterface(), {
     port: process.env.PORT || 7000,
     host: process.env.HOST || '0.0.0.0',
-    static: path.join(__dirname, 'static'),
+    static: path.join(__dirname, '..', 'static'),
     cache: {
         max: 1000,
         maxAge: 259200 * 1000 // 72 hours in milliseconds
