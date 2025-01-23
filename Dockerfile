@@ -8,14 +8,20 @@ COPY package*.json ./
 RUN npm install
 
 # Create required directories with proper permissions
-RUN mkdir -p /app/static /app/subtitles && \
-    chown -R node:node /app
+RUN mkdir -p /app/static /app/subtitles
 
-# Copy static files first
-COPY --chown=node:node static/* /app/static/
+# Copy static files first (and ensure they exist)
+COPY --chown=node:node static/loading.srt /app/static/
+COPY --chown=node:node static/logo.png /app/static/
+COPY --chown=node:node static/wallpaper.png /app/static/
 
 # Copy remaining app source
 COPY --chown=node:node . .
+
+# Verify static files exist and have correct permissions
+RUN ls -la /app/static && \
+    chmod 644 /app/static/* && \
+    chown -R node:node /app
 
 # Switch to non-root user
 USER node
