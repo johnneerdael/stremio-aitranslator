@@ -1,10 +1,14 @@
 const { addonBuilder, serveHTTP } = require('stremio-addon-sdk');
 const fs = require('fs');
+const express = require('express');
 const translator = require('./lib/translator');
 const opensubtitles = require('./lib/opensubtitles');
 const languages = require('./lib/languages');
 const logger = require('./lib/logger');
 const path = require('path');
+const templateHandler = require('./lib/templateHandler');
+
+const app = express();
 
 const manifest = {
     id: 'org.stremio.aitranslator',
@@ -157,11 +161,36 @@ try {
     process.exit(1);
 }
 
+// Serve static files
+app.use('/static', express.static('static'));
+app.use('/assets', express.static('static')); // Alias for backward compatibility
+
+// Configuration page route
+app.get('/configure', (req, res) => {
+    try {
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const html = templateHandler.renderConfigPage(
+            baseUrl,
+            {}, // Default config
+            manifest.version
+        );
+        res.send(html);
+    } catch (error) {
+        logger.error('Configuration page error:', error);
+        res.status(500).send('Error loading configuration page');
+    }
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+});
+
 // Start the server
 serveHTTP(builder.getInterface(), {
+    app,
     port: process.env.PORT || 7000,
     host: process.env.HOST || '0.0.0.0',
-    static: staticDir, // Use relative path here
     cache: {
         max: 1000,
         maxAge: 259200 * 1000 // 72 hours in milliseconds
