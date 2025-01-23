@@ -126,16 +126,21 @@ class TranslatorService {
             });
 
             const prompt = {
-                text: `Translate the following SRT subtitle lines to ${targetLang}.
-Rules:
-1. Preserve exact timing and sequence numbers
-2. Preserve all HTML-style formatting tags (like <i>, <b>)
-3. Keep line breaks exactly as in original
-4. Do not translate numbers or timecodes
-5. Maintain subtitle length to fit on screen (similar length to source)
+                text: `You are a professional subtitle translator specializing in ${targetLang} translations.
+Translate the following SRT subtitle lines to ${targetLang}.
+
+Key requirements:
+1. Preserve exact SRT formatting including sequence numbers and timecodes
+2. Keep all HTML-style formatting tags (e.g. <i>, <b>) intact
+3. Maintain natural flow and conversational style in ${targetLang}
+4. Keep subtitle length similar to source for proper display timing
+5. Preserve line breaks and spacing exactly as in source
+6. Do not translate proper names, numbers, or technical terms
 
 Input subtitles:
-${processedTexts.join('\n')}`
+${processedTexts.join('\n')}
+
+Translate only the subtitle text, keeping all formatting and timing information exactly as is.`
             };
 
             const result = await this.model.generateContent([prompt]);
@@ -210,39 +215,31 @@ ${processedTexts.join('\n')}`
         this.isProcessingBulk = true;
 
         try {
-            let currentBatch = [];
-            let currentTokens = 0;
-            const MAX_TOKENS_PER_BATCH = 8000; // Safe limit for Gemini Flash
-
-            for (let i = 0; i < lines.length; i++) {
-                const lineTokens = await this.estimateBatchSize([lines[i]]);
-                
-                if (currentTokens + lineTokens > MAX_TOKENS_PER_BATCH) {
-                    // Process current batch
-                    const translations = await this.translateBatch(currentBatch, targetLang, true);
-                    translations.forEach((translation, index) => {
-                        const lineIndex = startIndex + i - currentBatch.length + index;
-                        translatedLines[lineIndex] = translation;
-                    });
-                    
-                    currentBatch = [];
-                    currentTokens = 0;
-                    
-                    // Add delay between batches
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-                
-                currentBatch.push(lines[i]);
-                currentTokens += lineTokens;
+            // Group lines into subtitle blocks (4 lines per block typically)
+            const subtitleBlocks = [];
+            for (let i = 0; i < lines.length; i += 4) {
+                subtitleBlocks.push(lines.slice(i, i + 4).join('\n'));
             }
 
-            // Process final batch
-            if (currentBatch.length > 0) {
-                const translations = await this.translateBatch(currentBatch, targetLang, true);
+            // Process blocks in parallel with rate limiting
+            const concurrentLimit = 3;
+            for (let i = 0; i < subtitleBlocks.length; i += concurrentLimit) {
+                const batch = subtitleBlocks.slice(i, i + concurrentLimit);
+                const translations = await Promise.all(
+                    batch.map(block => this.translateWithRetry(block, targetLang))
+                );
+
+                // Update translated lines
                 translations.forEach((translation, index) => {
-                    const lineIndex = startIndex + lines.length - currentBatch.length + index;
-                    translatedLines[lineIndex] = translation;
+                    const blockIndex = i + index;
+                    const lines = translation.split('\n');
+                    lines.forEach((line, lineIndex) => {
+                        translatedLines[startIndex + (blockIndex * 4) + lineIndex] = line;
+                    });
                 });
+
+                // Rate limiting delay
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
         } catch (error) {
             logger.error('Bulk translation error:', error);
@@ -266,10 +263,66 @@ ${processedTexts.join('\n')}`
         }
     }
 
+    async validateTranslation(original, translated, targetLang) {
+        try {
+            // Check length ratio (shouldn't be too different from original)
+            const lengthRatio = translated.length / original.length;
+            if (lengthRatio < 0.5 || lengthRatio > 2.0) {
+                logger.warn(`Translation length ratio suspicious: ${lengthRatio}`);
+                return false;
+            }
+
+            // Verify timing codes weren't modified
+            const originalTiming = original.match(/\d{2}:\d{2}:\d{2},\d{3}\s-->\s\d{2}:\d{2}:\d{2},\d{3}/g);
+            const translatedTiming = translated.match(/\d{2}:\d{2}:\d{2},\d{3}\s-->\s\d{2}:\d{2}:\d{2},\d{3}/g);
+            if (JSON.stringify(originalTiming) !== JSON.stringify(translatedTiming)) {
+                logger.error('Timing codes were modified in translation');
+                return false;
+            }
+
+            // Verify HTML tags preserved
+            const originalTags = original.match(/<[^>]+>/g) || [];
+            const translatedTags = translated.match(/<[^>]+>/g) || [];
+            if (JSON.stringify(originalTags) !== JSON.stringify(translatedTags)) {
+                logger.error('HTML formatting tags were modified');
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            logger.error('Translation validation error:', error);
+            return false;
+        }
+    }
+
     async checkRateLimits() {
         // Implement rate limiting logic here if needed
         // For now, we're using simple delays between batches
         return true;
+    }
+
+    async translateWithRetry(text, targetLang, maxRetries = 3) {
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                const result = await this.model.generateContent([{
+                    text: text
+                }]);
+                
+                const translation = result.response.text();
+                if (await this.validateTranslation(text, translation, targetLang)) {
+                    return translation;
+                }
+                
+                // If validation failed, throw error to trigger retry
+                throw new Error('Translation validation failed');
+            } catch (error) {
+                logger.warn(`Translation attempt ${attempt + 1} failed:`, error);
+                if (attempt === maxRetries - 1) throw error;
+                
+                // Exponential backoff
+                await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+            }
+        }
     }
 
     async translateAndSave(type, language, imdbId, subtitleContent, season = null, episode = null) {
