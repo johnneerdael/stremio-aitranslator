@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install app dependencies
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm install
 
 # Create required directories first
 RUN mkdir -p /app/static /app/subtitles
