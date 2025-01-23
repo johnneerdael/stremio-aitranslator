@@ -170,3 +170,91 @@ serveHTTP(builder.getInterface(), {
 });
 
 logger.info('Addon server starting...');
+const { addonBuilder, serveHTTP } = require('stremio-addon-sdk');
+const config = require('./config/config');
+const translator = require('./lib/translator');
+const opensubtitles = require('./lib/opensubtitles');
+const languages = require('./lib/languages');
+const logger = require('./lib/logger');
+
+// Initialize addon builder with manifest
+const builder = new addonBuilder(config);
+
+// Define subtitle handler
+builder.defineSubtitlesHandler(async ({ type, id, extra = {}, config: userConfig }) => {
+    try {
+        if (!userConfig.gemini_key || !userConfig.opensubtitles_key) {
+            logger.error('Missing required API keys');
+            return { subtitles: [] };
+        }
+
+        // Configure services with user settings
+        translator.configure(userConfig.gemini_key);
+        opensubtitles.configure(userConfig.opensubtitles_key, userConfig.opensubtitles_app);
+
+        // Parse video ID for series
+        let imdbId = id;
+        let season = null;
+        let episode = null;
+        
+        if (type === 'series') {
+            const match = id.match(/tt(\d+):(\d+):(\d+)/);
+            if (!match) {
+                logger.warn(`Invalid series ID format: ${id}`);
+                return { subtitles: [] };
+            }
+            [, imdbId, season, episode] = match;
+            imdbId = 'tt' + imdbId;
+        }
+
+        // Get source subtitles
+        const subtitle = await opensubtitles.searchSubtitles(imdbId, type, season, episode);
+        if (!subtitle) {
+            logger.warn(`No subtitles found for ${id}`);
+            return { subtitles: [] };
+        }
+
+        // Download subtitle content
+        const content = await opensubtitles.downloadSubtitle(subtitle.attributes.files[0].file_id);
+        if (!content) {
+            logger.error(`Failed to download subtitle for ${id}`);
+            return { subtitles: [] };
+        }
+
+        // Translate subtitle
+        const targetLang = languages.getGeminiLanguageCode(userConfig.target_language);
+        const translatedPath = await translator.translateAndSave(
+            type,
+            targetLang,
+            imdbId,
+            content,
+            season,
+            episode
+        );
+
+        // Return translated subtitle
+        return {
+            subtitles: [{
+                id: `${id}_${targetLang}`,
+                url: `http://127.0.0.1:${config.server.port}/subtitles/${translatedPath}`,
+                lang: userConfig.target_language,
+                fps: subtitle.attributes.fps || 0
+            }],
+            cacheMaxAge: userConfig.cache_enabled ? (userConfig.cache_ttl * 3600) : 0,
+            staleRevalidate: config.cache.staleRevalidate,
+            staleError: config.cache.staleError
+        };
+
+    } catch (error) {
+        logger.error('Subtitle handler error:', error);
+        return { subtitles: [] };
+    }
+});
+
+// Start the addon server
+serveHTTP(builder.getInterface(), {
+    port: config.server.port,
+    static: './static'
+});
+
+logger.info(`Addon server running at http://${config.server.host}:${config.server.port}`);
