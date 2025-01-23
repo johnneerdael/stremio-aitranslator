@@ -14,8 +14,8 @@ const manifest = {
     catalogs: [],
     resources: ['subtitles'],
     idPrefixes: ['tt'],
-    logo: 'http://127.0.0.1:7000/logo.png',
-    background: 'http://127.0.0.1:7000/wallpaper.png',
+    logo: '/static/logo.png',
+    background: '/static/wallpaper.png',
     behaviorHints: {
         configurable: true,
         configurationRequired: true
@@ -62,7 +62,7 @@ builder.defineSubtitlesHandler(async ({ type, id, season, episode }) => {
         // Return loading subtitle immediately
         const loadingSubtitle = {
             id: 'loading',
-            url: 'http://127.0.0.1:7000/loading.srt',
+            url: '/static/loading.srt',
             lang: config.target_language
         };
 
@@ -97,7 +97,7 @@ builder.defineSubtitlesHandler(async ({ type, id, season, episode }) => {
 
                     return {
                         id: `${sub.id}_translated`,
-                        url: `http://127.0.0.1:7000/${translatedPath}`,
+                        url: `/subtitles/${translatedPath}`,
                         lang: config.target_language,
                         fps: sub.attributes.fps
                     };
@@ -125,7 +125,7 @@ builder.defineSubtitlesHandler(async ({ type, id, season, episode }) => {
 serveHTTP(builder.getInterface(), {
     port: process.env.PORT || 7000,
     host: process.env.HOST || '0.0.0.0',
-    static: path.join(__dirname, '../static'),
+    static: '/app/static',
     cache: {
         max: 1000,
         maxAge: 259200 * 1000 // 72 hours in milliseconds
@@ -133,4 +133,4 @@ serveHTTP(builder.getInterface(), {
     cors: true
 });
 
-logger.info('Addon server starting...'); 
+logger.info('Addon server starting...');
