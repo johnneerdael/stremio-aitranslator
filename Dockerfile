@@ -1,36 +1,38 @@
 FROM node:18-alpine
 
-# Create app directory
+# Add tini for proper process management
+RUN apk add --no-cache tini
+
 WORKDIR /app
 
-# Install app dependencies
+# Install dependencies first (better layer caching)
 COPY package*.json ./
-RUN npm install
+RUN npm ci --only=production
 
-# Create required directories with proper permissions
-RUN mkdir -p /app/static /app/subtitles
+# Create required directories
+RUN mkdir -p /app/static /app/subtitles /app/logs && \
+    chown -R node:node /app
 
-# Copy static files first (and ensure they exist)
-COPY --chown=node:node static/loading.srt /app/static/
-COPY --chown=node:node static/logo.png /app/static/
-COPY --chown=node:node static/wallpaper.png /app/static/
+# Copy static files first
+COPY --chown=node:node static/ /app/static/
+
+# Verify static files exist
+RUN [ -f /app/static/loading.srt ] && \
+    [ -f /app/static/logo.png ] && \
+    [ -f /app/static/wallpaper.png ] || \
+    (echo "Missing required static files" && exit 1)
 
 # Copy remaining app source
 COPY --chown=node:node . .
 
-# Verify static files exist and have correct permissions
-RUN ls -la /app/static && \
-    chmod 644 /app/static/* && \
-    chown -R node:node /app
-
 # Switch to non-root user
 USER node
 
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD wget --spider http://localhost:7000/health || exit 1
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:7000/health || exit 1
 
-# Expose port
 EXPOSE 7000
 
-# Start the application
+ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["npm", "start"]

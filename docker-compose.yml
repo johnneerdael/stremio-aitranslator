@@ -13,11 +13,21 @@ services:
       - HOST=0.0.0.0
       - LOG_LEVEL=info
     volumes:
-      - ./logs:/app/logs
-      - ./cache:/app/cache
-      - ./static:/app/static:ro
+      - subtitle-cache:/app/subtitles
+      - logs:/app/logs
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:7000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  subtitle-cache:
+    name: aitranslator-subtitles
+  logs:
+    name: aitranslator-logs
