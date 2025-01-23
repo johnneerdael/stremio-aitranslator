@@ -15,7 +15,7 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./cache:/app/cache
-      - ./static:/app/static
+      - ./static:/app/static:ro
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:7000/health"]
       interval: 30s
