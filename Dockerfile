@@ -7,12 +7,17 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --omit=dev
 
-# Copy app source
+# Create required directories first
+RUN mkdir -p /app/static /app/subtitles
+
+# Copy static files specifically
+COPY static/* /app/static/
+
+# Copy remaining app source
 COPY . .
 
-# Create cache and logs directories
-RUN mkdir -p /app/static && \
-    chown -R node:node /app
+# Set permissions
+RUN chown -R node:node /app
 
 # Switch to non-root user
 USER node
