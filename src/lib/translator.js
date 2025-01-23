@@ -71,10 +71,63 @@ class TranslatorService {
         }
     }
 
+    validateSrtFormat(text) {
+        const lines = text.split('\n');
+        let isValid = true;
+        let error = '';
+
+        for (let i = 0; i < lines.length; i += 4) {
+            // Check sequence number
+            if (!/^\d+$/.test(lines[i]?.trim())) {
+                isValid = false;
+                error = 'Invalid sequence number';
+                break;
+            }
+            // Check timecode format
+            if (!/^\d{2}:\d{2}:\d{2},\d{3}\s-->\s\d{2}:\d{2}:\d{2},\d{3}$/.test(lines[i+1]?.trim())) {
+                isValid = false;
+                error = 'Invalid timecode format';
+                break;
+            }
+            // Check for subtitle text
+            if (!lines[i+2]?.trim()) {
+                isValid = false;
+                error = 'Missing subtitle text';
+                break;
+            }
+        }
+        return { isValid, error };
+    }
+
+    preserveFormatting(text) {
+        // Store formatting tags
+        const tags = text.match(/<[^>]+>/g) || [];
+        // Replace tags with placeholders
+        let cleanText = text;
+        tags.forEach((tag, i) => {
+            cleanText = cleanText.replace(tag, `{{TAG${i}}}`);
+        });
+        return { cleanText, tags };
+    }
+
+    restoreFormatting(text, tags) {
+        let restoredText = text;
+        tags.forEach((tag, i) => {
+            restoredText = restoredText.replace(`{{TAG${i}}}`, tag);
+        });
+        return restoredText;
+    }
+
     async translateBatch(texts, targetLang, isBulk = false) {
         try {
             if (!this.client) {
                 throw new Error('Translator not configured. Call configure() first.');
+            }
+
+            // Validate SRT format
+            const { isValid, error } = this.validateSrtFormat(texts.join('\n'));
+            if (!isValid) {
+                throw new Error(`Invalid SRT format: ${error}`);
             }
 
             // Check cache first
@@ -84,13 +137,22 @@ class TranslatorService {
                 return cachedResult;
             }
 
+            // Process formatting before translation
+            const formattingMap = new Map();
+            const processedTexts = texts.map((text, i) => {
+                const { cleanText, tags } = this.preserveFormatting(text);
+                if (tags.length) formattingMap.set(i, tags);
+                return cleanText;
+            });
+
             const prompt = `Translate the following subtitle lines to ${targetLang}. 
 Preserve exact timing and formatting.
 For each line, determine if it's actual subtitle text or metadata (like timecodes or numbers).
+Maintain line breaks exactly as in the original.
 ${isBulk ? 'This is a bulk translation request, prioritize throughput over latency.' : 'This is a priority batch, optimize for quick response.'}
 
 Input lines:
-${texts.join('\n')}`;
+${processedTexts.join('\n')}`;
 
             const response = await this.client.post('/generateContent', {
                 contents: [{
@@ -121,9 +183,17 @@ ${texts.join('\n')}`;
 
             // Cache successful translations
             const translations = functionCall.args.translations;
-            await this.cacheTranslation(cacheKey, translations);
+            
+            // Restore formatting
+            const restoredTranslations = translations.map((trans, i) => {
+                if (formattingMap.has(i)) {
+                    trans.translated = this.restoreFormatting(trans.translated, formattingMap.get(i));
+                }
+                return trans;
+            });
 
-            return translations;
+            await this.cacheTranslation(cacheKey, restoredTranslations);
+            return restoredTranslations;
         } catch (error) {
             logger.error('Translation error:', error.message);
             return texts.map(text => ({
