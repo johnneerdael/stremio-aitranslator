@@ -63,6 +63,52 @@ class SubtitleManager {
             return 0;
         }
     }
+
+    async findTranslation(type, language, imdbId, season = null, episode = null) {
+        try {
+            const dirPath = await this.ensureDirectoryExists(type, language, imdbId, season);
+            const files = await fs.readdir(dirPath);
+            
+            // Find any existing translation
+            const pattern = type === 'series' 
+                ? `${imdbId}-translated-${episode}-` 
+                : `${imdbId}-translated-`;
+            
+            const existingFile = files.find(f => f.startsWith(pattern) && f.endsWith('.srt'));
+            if (existingFile) {
+                return path.join(dirPath, existingFile);
+            }
+
+            return null;
+        } catch (error) {
+            logger.error(`Error finding translation: ${error.message}`);
+            return null;
+        }
+    }
+
+    isTranslationInProgress(type, language, imdbId, season = null, episode = null) {
+        const key = `${type}_${language}_${imdbId}_${season}_${episode}`;
+        return this.inProgressTranslations.has(key);
+    }
+
+    setTranslationInProgress(type, language, imdbId, season = null, episode = null, inProgress = true) {
+        const key = `${type}_${language}_${imdbId}_${season}_${episode}`;
+        if (inProgress) {
+            this.inProgressTranslations.set(key, Date.now());
+        } else {
+            this.inProgressTranslations.delete(key);
+        }
+    }
+
+    cleanupStaleTranslations(maxAgeMs = 5 * 60 * 1000) { // 5 minutes default
+        const now = Date.now();
+        for (const [key, startTime] of this.inProgressTranslations.entries()) {
+            if (now - startTime > maxAgeMs) {
+                this.inProgressTranslations.delete(key);
+                logger.warn(`Cleaned up stale translation: ${key}`);
+            }
+        }
+    }
 }
 
-module.exports = new SubtitleManager(); 
+module.exports = new SubtitleManager();
