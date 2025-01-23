@@ -57,5 +57,4 @@ class OpenSubtitlesClient {
     }
 }
 
-module.exports = new OpenSubtitlesClient(); const axios = require('axios');
-const logger = require('./logger');
+module.exports = new OpenSubtitlesClient();
