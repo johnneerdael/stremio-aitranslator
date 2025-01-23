@@ -11,7 +11,7 @@ RUN npm install --omit=dev
 COPY . .
 
 # Create cache and logs directories
-RUN mkdir -p cache logs static && \
+RUN mkdir -p /app/static && \
     chown -R node:node /app
 
 # Switch to non-root user

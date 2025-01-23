@@ -126,7 +126,7 @@ builder.defineSubtitlesHandler(async ({ type, id, season, episode }) => {
 serveHTTP(builder.getInterface(), {
     port: process.env.PORT || 7000,
     host: process.env.HOST || '0.0.0.0',
-    static: '/app/static',
+    static: path.join(__dirname, 'static'),
     cache: {
         max: 1000,
         maxAge: 259200 * 1000 // 72 hours in milliseconds
